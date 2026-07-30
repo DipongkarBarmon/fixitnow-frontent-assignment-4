@@ -24,6 +24,7 @@ import {
  
 import { loginSchema, type LoginInput } from '../_libs/validations'
 import z from 'zod'
+import { loginAction } from '../_actions/authAction'
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
@@ -40,17 +41,23 @@ export default function LoginForm() {
  
 
   async function onSubmit(values: LoginInput) {
-   try {
-      setIsLoading(true)
+    setIsLoading(true)
+      try {
+        const result = await loginAction(values)
 
-      console.log(values)
-
-      toast.success("Login successful")
-    } catch (error) {
-      toast.error("Login failed")
-    } finally {
-      setIsLoading(false)
-    }
+        if (result.success) {
+          toast.success(result.message)
+          // TODO: Redirect to dashboard after successful login
+          // router.push('/dashboard')
+        } else {
+          toast.error(result.message)
+        }
+      } catch (error) {
+        toast.error('An unexpected error occurred')
+        console.error('[LoginForm] Error:', error)
+      } finally {
+        setIsLoading(false)
+      }
   }
   return (
     <Card className="w-full max-w-md border-neutral-200 shadow-lg dark:border-neutral-800">
