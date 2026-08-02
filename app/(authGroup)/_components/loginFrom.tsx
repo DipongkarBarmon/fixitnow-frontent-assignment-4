@@ -22,11 +22,14 @@ import {
 } from '@/components/ui/form'
 
  
-import { loginSchema, type LoginInput } from '../_libs/validations'
+import { loginSchema } from '../_libs/validations'
 import z from 'zod'
 import { loginAction } from '../_actions/authAction'
-
+import { useRouter } from 'next/navigation'
+  
 export default function LoginForm() {
+ 
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   type LoginInput = z.input<typeof loginSchema>;
@@ -41,14 +44,17 @@ export default function LoginForm() {
  
 
   async function onSubmit(values: LoginInput) {
+    
     setIsLoading(true)
+    
+  
       try {
         const result = await loginAction(values)
 
         if (result.success) {
           toast.success(result.message)
           // TODO: Redirect to dashboard after successful login
-          // router.push('/dashboard')
+          router.replace('/dashboard')
         } else {
           toast.error(result.message)
         }
