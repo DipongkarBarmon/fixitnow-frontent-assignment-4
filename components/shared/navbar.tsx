@@ -3,13 +3,16 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Wrench, Menu, X } from "lucide-react";
+import { Wrench, Menu, X, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { UserMenu } from "./userMenu";
 import { ThemeToggle } from "./themeToggle";
 import { useAuth } from "@/providers/auth-provider";
 import { PUBLIC_NAV_ITEMS } from "@/constants";
+
+// Static notification count — will be replaced with real API data
+const NOTIFICATION_COUNT = 3;
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -71,7 +74,23 @@ export default function Navbar() {
           {isLoading ? (
             <div className="size-8 animate-pulse rounded-full bg-neutral-200 dark:bg-neutral-800" />
           ) : isAuthenticated ? (
-            <UserMenu user={user} dashboardLink={getDashboardLink()} />
+            <>
+              {/* Notification Bell — only shown when logged in */}
+              <Link
+                href="/dashboard/notifications"
+                aria-label={`Notifications (${NOTIFICATION_COUNT} unread)`}
+                className="relative flex size-9 items-center justify-center rounded-lg text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-white"
+                id="notification-bell"
+              >
+                <Bell className="size-5" />
+                {NOTIFICATION_COUNT > 0 && (
+                  <span className="absolute right-1 top-1 flex size-4 items-center justify-center rounded-full bg-blue-600 text-[9px] font-bold leading-none text-white">
+                    {NOTIFICATION_COUNT > 9 ? "9+" : NOTIFICATION_COUNT}
+                  </span>
+                )}
+              </Link>
+              <UserMenu user={user} dashboardLink={getDashboardLink()} />
+            </>
           ) : (
             <>
               <Button
@@ -127,6 +146,20 @@ export default function Navbar() {
               <div className="border-t border-neutral-200 pt-4 dark:border-neutral-800">
                 {isAuthenticated ? (
                   <div className="flex flex-col gap-1">
+                    {/* Notification link in mobile menu */}
+                    <Link
+                      href="/dashboard/notifications"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-white"
+                    >
+                      <Bell className="size-4" />
+                      Notifications
+                      {NOTIFICATION_COUNT > 0 && (
+                        <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
+                          {NOTIFICATION_COUNT > 9 ? "9+" : NOTIFICATION_COUNT}
+                        </span>
+                      )}
+                    </Link>
                     <Link
                       href={getDashboardLink()}
                       onClick={() => setIsOpen(false)}

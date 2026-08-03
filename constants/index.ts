@@ -116,7 +116,9 @@ export const QUERY_KEYS = {
 export const PUBLIC_NAV_ITEMS = [
   { title: "Home", href: "/" },
   { title: "Services", href: "/services" },
+  { title: "Categories", href: "/categories" },
   { title: "Technicians", href: "/technicians" },
+  { title: "Reviews", href: "/reviews" },
   { title: "About", href: "/about" },
   { title: "Contact", href: "/contact" },
 ] as const;
