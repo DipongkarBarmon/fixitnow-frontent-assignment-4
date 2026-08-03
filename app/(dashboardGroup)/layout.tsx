@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Wrench, Menu, LogOut, LayoutDashboard, Calendar, CreditCard, Star, Bell, User, Settings, Clock, Users, FolderTree } from "lucide-react";
+import { Wrench, Menu, LogOut, LayoutDashboard, Calendar, CreditCard, Star, Bell, User, Settings, Clock, Users, FolderTree, TrendingUp, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,7 +16,7 @@ import type { LucideIcon } from "lucide-react";
 import type { User as UserType } from "@/types";
 
 const iconMap: Record<string, LucideIcon> = {
-  LayoutDashboard, Calendar, CreditCard, Star, Bell, User, Settings, Wrench, Clock, Users, FolderTree,
+  LayoutDashboard, Calendar, CreditCard, Star, Bell, User, Settings, Wrench, Clock, Users, FolderTree, TrendingUp, BarChart3,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

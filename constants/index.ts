@@ -139,15 +139,20 @@ export const TECHNICIAN_SIDEBAR_ITEMS = [
   { title: "My Services", href: "/technician-dashboard/services", icon: "Wrench" },
   { title: "Availability", href: "/technician-dashboard/availability", icon: "Clock" },
   { title: "Reviews", href: "/technician-dashboard/reviews", icon: "Star" },
+  { title: "Earnings", href: "/technician-dashboard/earnings", icon: "TrendingUp" },
   { title: "Profile", href: "/technician-dashboard/profile", icon: "User" },
+  { title: "Settings", href: "/technician-dashboard/settings", icon: "Settings" },
 ] as const;
 
 export const ADMIN_SIDEBAR_ITEMS = [
   { title: "Overview", href: "/admin-dashboard", icon: "LayoutDashboard" },
   { title: "Users", href: "/admin-dashboard/users", icon: "Users" },
   { title: "Categories", href: "/admin-dashboard/categories", icon: "FolderTree" },
+  { title: "Services", href: "/admin-dashboard/services", icon: "Wrench" },
   { title: "Bookings", href: "/admin-dashboard/bookings", icon: "Calendar" },
   { title: "Payments", href: "/admin-dashboard/payments", icon: "CreditCard" },
+  { title: "Reports", href: "/admin-dashboard/reports", icon: "BarChart3" },
+  { title: "Settings", href: "/admin-dashboard/settings", icon: "Settings" },
 ] as const;
 
 // ==========================================

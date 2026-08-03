@@ -5,13 +5,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
+  Wrench,
   Plus,
   Edit2,
   Trash2,
-  Wrench,
   Clock,
   DollarSign,
   Search,
+  Filter,
   CheckCircle2,
   XCircle,
   Loader2,
@@ -47,9 +48,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { DataTable, type ColumnDef } from "@/components/shared/data-table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { EmptyState } from "@/components/shared/empty-state";
-import { CardSkeleton } from "@/components/shared/loading";
 import {
   useServices,
   useCategories,
@@ -57,13 +57,13 @@ import {
   useUpdateService,
   useDeleteService,
 } from "@/hooks";
-import { formatCurrency } from "@/utils/format";
+import { formatCurrency, formatDate } from "@/utils/format";
 import type { Service } from "@/types";
 
 const serviceSchema = z.object({
   name: z.string().min(2, "Service name must be at least 2 characters"),
   categoryId: z.string().min(1, "Please select a category"),
-  startingPrice: z.number().min(50, "Price must be at least 50 BDT"),
+  startingPrice: z.number().min(50, "Starting price must be at least 50 BDT"),
   duration: z.number().min(15, "Duration must be at least 15 minutes"),
   description: z.string().min(10, "Description must be at least 10 characters"),
 });
@@ -76,26 +76,31 @@ type ServiceFormValues = {
   description: string;
 };
 
-export default function TechnicianServicesPage() {
-  const { data: servicesRes, isLoading: servicesLoading } = useServices({ limit: 50 });
+export default function AdminServicesPage() {
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
+  const [page, setPage] = useState(1);
+
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [deletingService, setDeletingService] = useState<Service | null>(null);
+
+  const { data: servicesRes, isLoading } = useServices({
+    page,
+    limit: 10,
+    categoryId: categoryFilter === "ALL" ? undefined : categoryFilter,
+    search: search || undefined,
+  });
   const { data: categoriesRes } = useCategories();
 
   const createMutation = useCreateService();
-  const updateMutation = useUpdateService("");
+  const updateMutation = useUpdateService(editingService?.id || "");
   const deleteMutation = useDeleteService();
 
   const services: Service[] = servicesRes?.data ?? [];
   const categories = categoriesRes?.data ?? [];
+  const meta = servicesRes?.meta;
 
-  const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("ALL");
-
-  // Dialog states
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingService, setEditingService] = useState<Service | null>(null);
-  const [deletingServiceId, setDeletingServiceId] = useState<string | null>(null);
-
-  // Forms
   const createForm = useForm<ServiceFormValues>({
     resolver: zodResolver(serviceSchema),
     defaultValues: {
@@ -138,11 +143,11 @@ export default function TechnicianServicesPage() {
         duration: values.duration,
         description: values.description,
       });
-      toast.success("Service added successfully!");
+      toast.success("Service created successfully!");
       setIsCreateOpen(false);
       createForm.reset();
     } catch {
-      toast.error("Failed to create service. Please try again.");
+      toast.error("Failed to create service");
     }
   };
 
@@ -159,31 +164,102 @@ export default function TechnicianServicesPage() {
       toast.success("Service updated successfully!");
       setEditingService(null);
     } catch {
-      toast.error("Failed to update service.");
+      toast.error("Failed to update service");
     }
   };
 
   const handleDelete = async () => {
-    if (!deletingServiceId) return;
+    if (!deletingService) return;
     try {
-      await deleteMutation.mutateAsync(deletingServiceId);
-      toast.success("Service deleted successfully");
-      setDeletingServiceId(null);
+      await deleteMutation.mutateAsync(deletingService.id);
+      toast.success(`Service "${deletingService.name}" deleted successfully`);
+      setDeletingService(null);
     } catch {
-      toast.error("Failed to delete service.");
+      toast.error("Failed to delete service");
     }
   };
 
-  // Filter services
-  const filteredServices = services.filter((s) => {
-    const matchesSearch =
-      !search ||
-      s.name.toLowerCase().includes(search.toLowerCase()) ||
-      s.description.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory =
-      categoryFilter === "ALL" || s.categoryId === categoryFilter;
-    return matchesSearch && matchesCategory;
-  });
+  const columns: ColumnDef<Service>[] = [
+    {
+      key: "name",
+      header: "Service",
+      sortable: true,
+      cell: (service) => (
+        <div>
+          <p className="font-semibold text-neutral-900 dark:text-white text-sm">{service.name}</p>
+          <p className="text-xs text-neutral-500 line-clamp-1">{service.description}</p>
+        </div>
+      ),
+    },
+    {
+      key: "category",
+      header: "Category",
+      cell: (service) => (
+        <Badge variant="secondary" className="text-xs font-medium">
+          {service.category?.name || "General"}
+        </Badge>
+      ),
+    },
+    {
+      key: "startingPrice",
+      header: "Price",
+      sortable: true,
+      cell: (service) => (
+        <span className="font-bold text-neutral-900 dark:text-white text-sm">
+          {formatCurrency(service.startingPrice)}
+        </span>
+      ),
+    },
+    {
+      key: "duration",
+      header: "Est. Duration",
+      hideOnMobile: true,
+      cell: (service) => (
+        <span className="text-xs text-neutral-500">{service.duration || 60} mins</span>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      cell: (service) => (
+        <Badge
+          variant="outline"
+          className={
+            service.isActive !== false
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300 text-xs"
+              : "border-neutral-200 text-neutral-500 text-xs"
+          }
+        >
+          {service.isActive !== false ? "Active" : "Inactive"}
+        </Badge>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      className: "text-right",
+      cell: (service) => (
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
+            onClick={() => handleOpenEdit(service)}
+          >
+            <Edit2 className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 text-red-500 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950"
+            onClick={() => setDeletingService(service)}
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -191,128 +267,71 @@ export default function TechnicianServicesPage() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white sm:text-3xl">
-            My Services
+            Services Catalog Management
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Create, edit, and organize the services and pricing you offer to customers.
+            Create, update, and manage all services offered across the platform.
           </p>
         </div>
         <Button
           onClick={() => setIsCreateOpen(true)}
-          className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+          className="gap-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold"
         >
-          <Plus className="size-4" /> Add Service
+          <Plus className="size-4" /> Add New Service
         </Button>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
-          <Input
-            placeholder="Search your services..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="All Categories" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All Categories</SelectItem>
-            {categories.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Services Grid */}
-      {servicesLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <CardSkeleton />
-          <CardSkeleton />
-          <CardSkeleton />
-        </div>
-      ) : filteredServices.length === 0 ? (
-        <EmptyState
-          title="No services found"
-          description="Add your first service to start accepting customer orders."
-          actionLabel="Add Service"
-          onAction={() => setIsCreateOpen(true)}
-          className="py-12"
-        />
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredServices.map((service) => (
-            <Card
-              key={service.id}
-              className="flex flex-col justify-between border-neutral-200 transition-all hover:shadow-md dark:border-neutral-800"
+      {/* Category Filter */}
+      <Card className="border-neutral-200 dark:border-neutral-800">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+              Filter by Category
+            </span>
+            <Select
+              value={categoryFilter}
+              onValueChange={(val) => {
+                setCategoryFilter(val);
+                setPage(1);
+              }}
             >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <Badge variant="secondary" className="mb-2 text-xs font-medium">
-                      {service.category?.name || "General Service"}
-                    </Badge>
-                    <CardTitle className="text-lg font-bold text-neutral-900 dark:text-white">
-                      {service.name}
-                    </CardTitle>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8 text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
-                      onClick={() => handleOpenEdit(service)}
-                    >
-                      <Edit2 className="size-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8 text-red-500 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950"
-                      onClick={() => setDeletingServiceId(service.id)}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </div>
-                </div>
-                <CardDescription className="line-clamp-2 text-xs">
-                  {service.description}
-                </CardDescription>
-              </CardHeader>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Categories</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
-              <CardContent className="pt-0">
-                <div className="mt-2 flex items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800">
-                  <div className="flex items-center gap-1.5 text-xs text-neutral-500">
-                    <Clock className="size-3.5" />
-                    <span>{service.duration || 60} mins</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs text-neutral-400">Starting at</span>
-                    <p className="text-lg font-bold text-neutral-900 dark:text-white">
-                      {formatCurrency(service.startingPrice)}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      {/* DataTable */}
+      <DataTable
+        columns={columns}
+        data={services}
+        rowKey="id"
+        isLoading={isLoading}
+        searchable
+        searchPlaceholder="Search services..."
+        emptyMessage="No services found"
+        emptyDescription="Create a service or adjust your category filter."
+        meta={meta}
+        onPageChange={setPage}
+      />
 
-      {/* Add Service Dialog */}
+      {/* Create Service Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Add New Service</DialogTitle>
+            <DialogTitle>Add Platform Service</DialogTitle>
             <DialogDescription>
-              Provide details and pricing for the service you want to offer.
+              Define name, category, baseline pricing, and description.
             </DialogDescription>
           </DialogHeader>
 
@@ -325,7 +344,7 @@ export default function TechnicianServicesPage() {
                   <FormItem>
                     <FormLabel>Service Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Master Bathroom Pipe Repair" {...field} />
+                      <Input placeholder="e.g. Full House Deep Sanitization" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -341,13 +360,13 @@ export default function TechnicianServicesPage() {
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a service category" />
+                          <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
+                        {categories.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -383,7 +402,7 @@ export default function TechnicianServicesPage() {
                   name="duration"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Est. Duration (mins)</FormLabel>
+                      <FormLabel>Duration (mins)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -406,11 +425,7 @@ export default function TechnicianServicesPage() {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="Detailed breakdown of what is included in this service..."
-                        rows={3}
-                        {...field}
-                      />
+                      <Textarea rows={3} placeholder="Comprehensive description of the service..." {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -418,22 +433,17 @@ export default function TechnicianServicesPage() {
               />
 
               <DialogFooter className="pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsCreateOpen(false)}
-                >
+                <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="bg-amber-600 hover:bg-amber-700 text-white"
                   disabled={createMutation.isPending}
                 >
                   {createMutation.isPending ? (
                     <>
-                      <Loader2 className="size-4 animate-spin mr-2" />
-                      Creating...
+                      <Loader2 className="size-4 animate-spin mr-2" /> Creating...
                     </>
                   ) : (
                     "Create Service"
@@ -451,7 +461,7 @@ export default function TechnicianServicesPage() {
           <DialogHeader>
             <DialogTitle>Edit Service</DialogTitle>
             <DialogDescription>
-              Update pricing or service details for {editingService?.name}.
+              Modify service parameters for {editingService?.name}
             </DialogDescription>
           </DialogHeader>
 
@@ -484,9 +494,9 @@ export default function TechnicianServicesPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
+                        {categories.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -521,7 +531,7 @@ export default function TechnicianServicesPage() {
                   name="duration"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Est. Duration (mins)</FormLabel>
+                      <FormLabel>Duration (mins)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -551,22 +561,17 @@ export default function TechnicianServicesPage() {
               />
 
               <DialogFooter className="pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setEditingService(null)}
-                >
+                <Button type="button" variant="outline" onClick={() => setEditingService(null)}>
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="bg-amber-600 hover:bg-amber-700 text-white"
                   disabled={updateMutation.isPending}
                 >
                   {updateMutation.isPending ? (
                     <>
-                      <Loader2 className="size-4 animate-spin mr-2" />
-                      Saving...
+                      <Loader2 className="size-4 animate-spin mr-2" /> Saving...
                     </>
                   ) : (
                     "Save Changes"
@@ -580,10 +585,10 @@ export default function TechnicianServicesPage() {
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
-        open={!!deletingServiceId}
-        onOpenChange={(open) => !open && setDeletingServiceId(null)}
+        open={!!deletingService}
+        onOpenChange={(open) => !open && setDeletingService(null)}
         title="Delete Service"
-        description="Are you sure you want to remove this service? Existing completed bookings will not be affected."
+        description={`Are you sure you want to delete "${deletingService?.name}" from the platform catalog?`}
         confirmLabel="Delete Service"
         variant="destructive"
         isLoading={deleteMutation.isPending}

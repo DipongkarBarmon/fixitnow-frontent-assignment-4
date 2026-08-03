@@ -60,21 +60,28 @@ export function useCreateBooking() {
 }
 
 /**
- * Update a booking's status (ACCEPTED / DECLINED / IN_PROGRESS / COMPLETED).
+ * Update a booking's status (ACCEPTED / DECLINED / IN_PROGRESS / COMPLETED / CANCELLED).
  */
-export function useUpdateBookingStatus(bookingId: string) {
+export function useUpdateBookingStatus(bookingId?: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (status: BookingStatus) =>
-      apiPatch<ApiResponse<Booking>>(
-        API_ROUTES.BOOKINGS.UPDATE_STATUS(bookingId),
+    mutationFn: (params: { id?: string; status: BookingStatus } | BookingStatus) => {
+      const id = typeof params === "object" ? params.id || bookingId : bookingId;
+      const status = typeof params === "object" ? params.status : params;
+      if (!id) throw new Error("Booking ID is required to update status");
+      return apiPatch<ApiResponse<Booking>>(
+        API_ROUTES.BOOKINGS.UPDATE_STATUS(id),
         { status }
-      ),
-    onSuccess: () => {
+      );
+    },
+    onSuccess: (_, variables) => {
+      const id = typeof variables === "object" ? variables.id || bookingId : bookingId;
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKINGS.ALL });
-      void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.BOOKINGS.DETAIL(bookingId),
-      });
+      if (id) {
+        void queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.BOOKINGS.DETAIL(id),
+        });
+      }
     },
   });
 }

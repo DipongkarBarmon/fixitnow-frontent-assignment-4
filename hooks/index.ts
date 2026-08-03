@@ -13,11 +13,15 @@ export {
   useFeaturedServices,
   useCreateService,
   useUpdateService,
+  useDeleteService,
 } from "./use-services";
 
 export {
   useCategories,
   useCategoryDetail,
+  useCreateCategory,
+  useUpdateCategory,
+  useDeleteCategory,
 } from "./use-categories";
 
 export {
@@ -25,6 +29,7 @@ export {
   useTechnicianDetail,
   useMyTechnicianProfile,
   useTopRatedTechnicians,
+  useUpdateTechnicianProfile,
 } from "./use-technicians";
 
 export {
@@ -40,3 +45,26 @@ export {
   useReviewsByService,
   useCreateReview,
 } from "./use-reviews";
+
+export {
+  usePayments,
+  usePaymentById,
+  useInitiatePayment,
+} from "./use-payments";
+
+export {
+  useAvailability,
+  useSetAvailability,
+  useRemoveAvailability,
+} from "./use-availability";
+
+export {
+  useAdminStats,
+  useAdminUsers,
+  useBanUser,
+  useUnbanUser,
+  useDeleteUser,
+} from "./use-admin";
+
+export { useUpdateProfile } from "./use-profile";
+

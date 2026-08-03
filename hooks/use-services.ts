@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiGet, apiPost, apiPatch } from "@/lib/axios-client";
+import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/axios-client";
 import { QUERY_KEYS, API_ROUTES } from "@/constants";
 import type {
   Service,
@@ -53,10 +53,10 @@ export function useFeaturedServices() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Admin Mutations (create / update)
+// Admin & Technician Mutations (create / update / delete)
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface CreateServiceInput {
+export interface CreateServiceInput {
   name: string;
   description: string;
   categoryId: string;
@@ -65,7 +65,7 @@ interface CreateServiceInput {
   image?: string;
 }
 
-interface UpdateServiceInput extends Partial<CreateServiceInput> {
+export interface UpdateServiceInput extends Partial<CreateServiceInput> {
   isActive?: boolean;
 }
 
@@ -93,3 +93,15 @@ export function useUpdateService(id: string) {
     },
   });
 }
+
+export function useDeleteService() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiDelete<ApiResponse<null>>(API_ROUTES.SERVICES.DETAIL(id)),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.SERVICES.ALL });
+    },
+  });
+}
+

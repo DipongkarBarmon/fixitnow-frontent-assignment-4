@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { apiGet } from "@/lib/axios-client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiGet, apiPatch } from "@/lib/axios-client";
 import { QUERY_KEYS, API_ROUTES } from "@/constants";
 import type {
   TechnicianProfile,
@@ -72,3 +72,27 @@ export function useTopRatedTechnicians() {
     staleTime: 5 * 60 * 1000,
   });
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mutations
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Update the logged-in technician's profile details.
+ */
+export function useUpdateTechnicianProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<TechnicianProfile>) =>
+      apiPatch<ApiResponse<TechnicianProfile>>(API_ROUTES.TECHNICIANS.PROFILE, data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: [...QUERY_KEYS.TECHNICIANS.ALL, "profile"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.TECHNICIANS.ALL,
+      });
+    },
+  });
+}
+

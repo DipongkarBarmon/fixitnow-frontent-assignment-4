@@ -188,27 +188,20 @@ export function TableSkeleton({
 }
 
 /**
- * Profile skeleton.
+ * Skeleton for a Stat Card.
  */
-export function ProfileSkeleton() {
+export function StatCardSkeleton() {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Skeleton className="size-20 rounded-full" />
-        <div className="space-y-2">
-          <Skeleton className="h-5 w-40" />
-          <Skeleton className="h-4 w-56" />
-          <Skeleton className="h-4 w-24" />
-        </div>
+    <div className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
+      <div className="flex items-center justify-between">
+        <Skeleton className="size-10 rounded-lg" />
+        <Skeleton className="h-4 w-12 rounded" />
       </div>
-      <div className="space-y-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="space-y-1">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-10 w-full rounded-md" />
-          </div>
-        ))}
+      <div className="mt-3 space-y-2">
+        <Skeleton className="h-7 w-28" />
+        <Skeleton className="h-4 w-20" />
       </div>
     </div>
   );
 }
+

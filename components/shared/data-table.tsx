@@ -51,13 +51,13 @@ export interface DataTableMeta {
   totalPages: number;
 }
 
-interface DataTableProps<T> {
+export interface DataTableProps<T> {
   /** Column definitions */
   columns: ColumnDef<T>[];
   /** Row data */
   data: T[];
-  /** Unique key accessor for each row — must be a keyof T whose value is a string */
-  rowKey: keyof T;
+  /** Unique key accessor for each row — keyof T or function, defaults to "id" */
+  rowKey?: keyof T | ((row: T) => string);
   /** Show a loading skeleton */
   isLoading?: boolean;
   /** Pagination metadata from the API */
@@ -82,10 +82,10 @@ interface DataTableProps<T> {
 // Component
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function DataTable<T extends Record<string, unknown>>({
+export function DataTable<T extends object>({
   columns,
   data,
-  rowKey,
+  rowKey = "id" as keyof T,
   isLoading = false,
   meta,
   onPageChange,
@@ -191,24 +191,30 @@ export function DataTable<T extends Record<string, unknown>>({
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredData.map((row) => (
-                  <TableRow
-                    key={String(row[rowKey])}
-                    className="transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900/60"
-                  >
-                    {columns.map((col) => (
-                      <TableCell
-                        key={col.key}
-                        className={cn(
-                          col.hideOnMobile && "hidden sm:table-cell",
-                          col.className
-                        )}
-                      >
-                        {col.cell(row)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
+                filteredData.map((row, idx) => {
+                  const key =
+                    typeof rowKey === "function"
+                      ? rowKey(row)
+                      : String((row as Record<string, unknown>)[rowKey as string] ?? idx);
+                  return (
+                    <TableRow
+                      key={key}
+                      className="transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900/60"
+                    >
+                      {columns.map((col) => (
+                        <TableCell
+                          key={col.key}
+                          className={cn(
+                            col.hideOnMobile && "hidden sm:table-cell",
+                            col.className
+                          )}
+                        >
+                          {col.cell(row)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
