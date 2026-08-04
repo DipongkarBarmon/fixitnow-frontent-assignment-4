@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiGet, apiPatch, apiDelete } from "@/lib/axios-client";
+import { apiGet, apiPut, apiDelete } from "@/lib/axios-client";
 import { QUERY_KEYS, API_ROUTES } from "@/constants";
 import type {
   ApiResponse,
@@ -25,16 +25,15 @@ export function useAdminStats() {
 }
 
 /**
- * Fetch a paginated/filtered list of all users on the platform.
+ * Fetch a list of all users on the platform.
  */
 export function useAdminUsers(filters: UserFilters = {}) {
   return useQuery({
     queryKey: QUERY_KEYS.ADMIN.USERS(filters as Record<string, unknown>),
     queryFn: () =>
-      apiGet<PaginatedResponse<User>>(API_ROUTES.USERS.LIST, {
+      apiGet<PaginatedResponse<User>>(API_ROUTES.ADMIN.GET_ALL_USERS, {
         ...filters,
-        page: filters.page,
-        limit: filters.limit,
+        searchTerm: filters.search,
       }),
   });
 }
@@ -44,13 +43,32 @@ export function useAdminUsers(filters: UserFilters = {}) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Update user status (ACTIVE or BLOCKED).
+ */
+export function useUpdateUserStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, status }: { userId: string; status: "ACTIVE" | "BLOCKED" }) =>
+      apiPut<ApiResponse<User>>(
+        `${API_ROUTES.ADMIN.UPDATE_USER_STATUS}?userId=${encodeURIComponent(userId)}&status=${encodeURIComponent(status)}`
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ADMIN.STATS });
+    },
+  });
+}
+
+/**
  * Ban a user from the platform.
  */
 export function useBanUser() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (userId: string) =>
-      apiPatch<ApiResponse<User>>(API_ROUTES.USERS.BAN(userId)),
+      apiPut<ApiResponse<User>>(
+        `${API_ROUTES.ADMIN.UPDATE_USER_STATUS}?userId=${encodeURIComponent(userId)}&status=BLOCKED`
+      ),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ADMIN.STATS });
@@ -65,7 +83,9 @@ export function useUnbanUser() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (userId: string) =>
-      apiPatch<ApiResponse<User>>(API_ROUTES.USERS.UNBAN(userId)),
+      apiPut<ApiResponse<User>>(
+        `${API_ROUTES.ADMIN.UPDATE_USER_STATUS}?userId=${encodeURIComponent(userId)}&status=ACTIVE`
+      ),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ADMIN.STATS });
@@ -80,10 +100,11 @@ export function useDeleteUser() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (userId: string) =>
-      apiDelete<ApiResponse<null>>(API_ROUTES.USERS.DELETE(userId)),
+      apiDelete<ApiResponse<null>>(API_ROUTES.ADMIN.DELETE_USER(userId)),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ADMIN.STATS });
     },
   });
 }
+

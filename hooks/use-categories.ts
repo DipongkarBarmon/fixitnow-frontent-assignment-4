@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/axios-client";
+import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/axios-client";
 import { QUERY_KEYS, API_ROUTES } from "@/constants";
 import type { Category, ApiResponse } from "@/types";
 
@@ -34,32 +34,31 @@ export function useCategoryDetail(id: string) {
 // Mutations
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface CreateCategoryInput {
+export interface CategoryMutationInput {
   name: string;
-  description?: string;
-  image?: string;
   icon?: string;
+  description?: string;
 }
 
 export function useCreateCategory() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: CreateCategoryInput) =>
-      apiPost<ApiResponse<Category>>(API_ROUTES.CATEGORIES.LIST, data),
+    mutationFn: (data: CategoryMutationInput) =>
+      apiPost<ApiResponse<Category>>(API_ROUTES.ADMIN.CREATE_CATEGORY, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CATEGORIES.ALL });
     },
   });
 }
 
-export function useUpdateCategory(id: string) {
+export function useUpdateCategory() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: Partial<CreateCategoryInput>) =>
-      apiPatch<ApiResponse<Category>>(API_ROUTES.CATEGORIES.DETAIL(id), data),
-    onSuccess: () => {
+    mutationFn: ({ id, data }: { id: string; data: Partial<CategoryMutationInput> }) =>
+      apiPut<ApiResponse<Category>>(API_ROUTES.ADMIN.UPDATE_CATEGORY(id), data),
+    onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CATEGORIES.ALL });
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CATEGORIES.DETAIL(id) });
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CATEGORIES.DETAIL(variables.id) });
     },
   });
 }
@@ -68,10 +67,11 @@ export function useDeleteCategory() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) =>
-      apiDelete<ApiResponse<null>>(API_ROUTES.CATEGORIES.DETAIL(id)),
+      apiDelete<ApiResponse<null>>(API_ROUTES.ADMIN.DELETE_CATEGORY(id)),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CATEGORIES.ALL });
     },
   });
 }
+
 

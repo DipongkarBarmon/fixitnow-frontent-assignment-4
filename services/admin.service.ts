@@ -3,7 +3,6 @@
 import { apiClient } from "@/lib/api-client";
 import type {
   ApiResponse,
-  PaginatedResponse,
   User,
   UserFilters,
   DashboardStats,
@@ -19,25 +18,37 @@ export async function getDashboardStats() {
 
 export async function getUsers(filters?: UserFilters) {
   const query = filters ? buildQueryString(filters as Record<string, string | number | boolean | undefined>) : "";
-  return apiClient<PaginatedResponse<User>>(`${API_ROUTES.USERS.LIST}${query}`, {
+  return apiClient<ApiResponse<User[]>>(`${API_ROUTES.ADMIN.GET_ALL_USERS}${query}`, {
     cache: "no-store",
   });
 }
 
-export async function banUser(id: string) {
-  return apiClient<ApiResponse<User>>(API_ROUTES.USERS.BAN(id), {
-    method: "PATCH",
+export async function getUserById(userId: string) {
+  return apiClient<ApiResponse<User>>(API_ROUTES.ADMIN.GET_USER(userId), {
+    cache: "no-store",
   });
+}
+
+export async function updateUserStatus(userId: string, status: "ACTIVE" | "BLOCKED") {
+  return apiClient<ApiResponse<User>>(
+    `${API_ROUTES.ADMIN.UPDATE_USER_STATUS}?userId=${encodeURIComponent(userId)}&status=${encodeURIComponent(status)}`,
+    {
+      method: "PUT",
+    }
+  );
+}
+
+export async function banUser(id: string) {
+  return updateUserStatus(id, "BLOCKED");
 }
 
 export async function unbanUser(id: string) {
-  return apiClient<ApiResponse<User>>(API_ROUTES.USERS.UNBAN(id), {
-    method: "PATCH",
-  });
+  return updateUserStatus(id, "ACTIVE");
 }
 
 export async function deleteUser(id: string) {
-  return apiClient<ApiResponse<null>>(API_ROUTES.USERS.DELETE(id), {
+  return apiClient<ApiResponse<null>>(API_ROUTES.ADMIN.DELETE_USER(id), {
     method: "DELETE",
   });
 }
+

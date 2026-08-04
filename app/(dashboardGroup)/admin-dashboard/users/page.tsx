@@ -105,26 +105,31 @@ export default function AdminUsersPage() {
     }
   };
 
+  const isUserBlocked = (user: UserType) => user.status === "BLOCKED" || user.isBanned === true;
+
   const columns: ColumnDef<UserType>[] = [
     {
       key: "user",
       header: "User",
-      cell: (user) => (
-        <div className="flex items-center gap-3">
-          <Avatar className="size-9">
-            <AvatarImage src={user.avatar || getAvatarUrl(user.name)} alt={user.name} />
-            <AvatarFallback className="text-xs font-bold">
-              {getInitials(user.name)}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-semibold text-neutral-900 dark:text-white text-sm leading-tight">
-              {user.name}
-            </p>
-            <p className="text-xs text-neutral-500">{user.email}</p>
+      cell: (user) => {
+        const photo = user.profilePhoto || user.avatar || getAvatarUrl(user.name);
+        return (
+          <div className="flex items-center gap-3">
+            <Avatar className="size-9">
+              <AvatarImage src={photo} alt={user.name} />
+              <AvatarFallback className="text-xs font-bold">
+                {getInitials(user.name)}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-semibold text-neutral-900 dark:text-white text-sm leading-tight">
+                {user.name}
+              </p>
+              <p className="text-xs text-neutral-500">{user.email}</p>
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: "role",
@@ -157,25 +162,28 @@ export default function AdminUsersPage() {
       hideOnMobile: true,
       cell: (user) => (
         <span className="text-xs text-neutral-600 dark:text-neutral-400">
-          {user.phone || "—"}
+          {user.phoneNumber || user.phone || "—"}
         </span>
       ),
     },
     {
       key: "status",
       header: "Status",
-      cell: (user) => (
-        <Badge
-          variant="outline"
-          className={
-            !user.isBanned
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300 text-xs"
-              : "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300 text-xs"
-          }
-        >
-          {!user.isBanned ? "Active" : "Banned"}
-        </Badge>
-      ),
+      cell: (user) => {
+        const blocked = isUserBlocked(user);
+        return (
+          <Badge
+            variant="outline"
+            className={
+              !blocked
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300 text-xs font-medium"
+                : "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300 text-xs font-medium"
+            }
+          >
+            {!blocked ? "ACTIVE" : "BLOCKED"}
+          </Badge>
+        );
+      },
     },
     {
       key: "createdAt",

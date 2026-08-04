@@ -6,7 +6,7 @@ const BACKEND_URL = process.env.BACKEND_API_URL;
 
 interface FetchOptions {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
-  body?: Record<string, unknown>;
+  body?: Record<string, unknown> | unknown;
   tags?: string[];
   revalidate?: number;
   cache?: RequestCache;
@@ -36,8 +36,8 @@ export async function apiClient<T>(
   const fetchOptions: RequestInit & { next?: { tags?: string[]; revalidate?: number } } = {
     method,
     headers,
-    ...(body && { body: JSON.stringify(body) }),
-    ...(cache && { cache }),
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    ...(cache ? { cache } : {}),
   };
 
   if (tags || revalidate !== undefined) {

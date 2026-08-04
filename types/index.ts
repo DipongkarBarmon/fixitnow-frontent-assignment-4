@@ -3,17 +3,21 @@
 // ==========================================
 
 export type UserRole = "CUSTOMER" | "TECHNICIAN" | "ADMIN";
+export type UserStatus = "ACTIVE" | "BLOCKED";
 
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  status?: UserStatus;
+  phoneNumber?: string;
   phone?: string;
+  profilePhoto?: string;
   avatar?: string;
   address?: string;
-  isVerified: boolean;
-  isBanned: boolean;
+  isVerified?: boolean;
+  isBanned?: boolean;
   createdAt: string;
   updatedAt: string;
 }

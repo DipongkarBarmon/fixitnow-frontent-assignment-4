@@ -64,7 +64,7 @@ export default function AdminCategoriesPage() {
 
   const { data: categoriesRes, isLoading } = useCategories();
   const createMutation = useCreateCategory();
-  const updateMutation = useUpdateCategory(editingCategory?.id || "");
+  const updateMutation = useUpdateCategory();
   const deleteMutation = useDeleteCategory();
 
   const categories: Category[] = categoriesRes?.data ?? [];
@@ -90,42 +90,60 @@ export default function AdminCategoriesPage() {
 
   const handleCreateSubmit = async (values: CategoryFormValues) => {
     try {
-      await createMutation.mutateAsync({
-        name: values.name,
-        description: values.description,
-        icon: values.icon,
+      const res = await createMutation.mutateAsync({
+        name: values.name.trim(),
+        description: values.description?.trim(),
+        icon: values.icon?.trim(),
       });
+      if (res?.success === false) {
+        toast.error(res?.message || "Failed to create category");
+        return;
+      }
       toast.success("Category created successfully!");
       setIsCreateOpen(false);
       createForm.reset();
-    } catch {
-      toast.error("Failed to create category");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(error.response?.data?.message || error.message || "Failed to create category");
     }
   };
 
   const handleEditSubmit = async (values: CategoryFormValues) => {
     if (!editingCategory) return;
     try {
-      await updateMutation.mutateAsync({
-        name: values.name,
-        description: values.description,
-        icon: values.icon,
+      const res = await updateMutation.mutateAsync({
+        id: editingCategory.id,
+        data: {
+          name: values.name.trim(),
+          description: values.description?.trim(),
+          icon: values.icon?.trim(),
+        },
       });
+      if (res?.success === false) {
+        toast.error(res?.message || "Failed to update category");
+        return;
+      }
       toast.success("Category updated successfully!");
       setEditingCategory(null);
-    } catch {
-      toast.error("Failed to update category");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(error.response?.data?.message || error.message || "Failed to update category");
     }
   };
 
   const handleDelete = async () => {
     if (!deletingCategory) return;
     try {
-      await deleteMutation.mutateAsync(deletingCategory.id);
-      toast.success(`Category "${deletingCategory.name}" deleted`);
+      const res = await deleteMutation.mutateAsync(deletingCategory.id);
+      if (res?.success === false) {
+        toast.error(res?.message || "Failed to delete category");
+        return;
+      }
+      toast.success(`Category "${deletingCategory.name}" deleted successfully`);
       setDeletingCategory(null);
-    } catch {
-      toast.error("Failed to delete category");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(error.response?.data?.message || error.message || "Failed to delete category");
     }
   };
 

@@ -58,31 +58,56 @@ export default function LoginForm() {
           setUser(result.data.user)
         }
 
-        // If a redirect URL was provided in query params (e.g. from protected route), use it
-        const redirectParam = searchParams.get('redirect')
-        if (redirectParam && redirectParam.startsWith('/')) {
-          router.replace(redirectParam)
-          return
+        // Determine destination dashboard based on role (case-insensitive with token fallback)
+        let rawRole =
+          result.data?.user?.role ||
+          result.data?.role ||
+          result.data?.data?.role ||
+          result.data?.data?.user?.role
+
+        if (!rawRole && result.data?.accessToken) {
+          try {
+            const parts = result.data.accessToken.split('.')
+            if (parts.length >= 2) {
+              const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+              const payload = JSON.parse(
+                decodeURIComponent(
+                  atob(base64)
+                    .split('')
+                    .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                    .join('')
+                )
+              )
+              rawRole = payload?.role || payload?.user?.role || payload?.roleName
+            }
+          } catch (e) {
+            console.error('[LoginForm] Failed to decode token payload:', e)
+          }
         }
 
-        // Determine destination dashboard based on role
-        const role = result.data?.user?.role || result.data?.role
+        const role = typeof rawRole === 'string' ? rawRole.toUpperCase() : 'CUSTOMER'
         let targetDashboard = '/dashboard'
 
-        switch (role) {
-          case 'ADMIN':
-            targetDashboard = '/admin-dashboard'
-            break
-          case 'TECHNICIAN':
-            targetDashboard = '/technician-dashboard'
-            break
-          case 'CUSTOMER':
-          default:
-            targetDashboard = '/dashboard'
-            break
+        if (role === 'ADMIN') {
+          targetDashboard = '/admin-dashboard'
+        } else if (role === 'TECHNICIAN') {
+          targetDashboard = '/technician-dashboard'
+        } else {
+          targetDashboard = '/dashboard'
+        }
+
+        // If a redirect URL was provided in query params and it's not the generic /dashboard for admin/tech
+        const redirectParam = searchParams.get('redirect')
+        if (
+          redirectParam &&
+          redirectParam.startsWith('/') &&
+          !(redirectParam === '/dashboard' && role !== 'CUSTOMER')
+        ) {
+          targetDashboard = redirectParam
         }
 
         router.replace(targetDashboard)
+        router.refresh()
       } else {
         toast.error(result.message || 'Invalid credentials')
       }

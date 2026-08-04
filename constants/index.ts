@@ -13,14 +13,16 @@ export const API_ROUTES = {
   },
   USERS: {
     PROFILE: "/api/users/profile",
-    LIST: "/api/users",
-    BAN: (id: string) => `/api/users/${id}/ban`,
-    UNBAN: (id: string) => `/api/users/${id}/unban`,
-    DELETE: (id: string) => `/api/users/${id}`,
+    LIST: "/api/admin/get-all-users",
+    DETAIL: (id: string) => `/api/admin/get-user?userId=${id}`,
+    UPDATE_STATUS: "/api/admin/update-user-status",
+    BAN: (id: string) => `/api/admin/update-user-status?userId=${id}&status=BLOCKED`,
+    UNBAN: (id: string) => `/api/admin/update-user-status?userId=${id}&status=ACTIVE`,
+    DELETE: (id: string) => `/api/admin/delete-user?userId=${id}`,
   },
   CATEGORIES: {
-    LIST: "/api/categories",
-    DETAIL: (id: string) => `/api/categories/${id}`,
+    LIST: "/api/category/get-all-category",
+    DETAIL: (id: string) => `/api/category/get-category/${id}`,
   },
   SERVICES: {
     LIST: "/api/services",
@@ -56,6 +58,13 @@ export const API_ROUTES = {
     BY_SERVICE: (serviceId: string) => `/api/reviews/service/${serviceId}`,
   },
   ADMIN: {
+    CREATE_CATEGORY: "/api/admin/create-category",
+    UPDATE_CATEGORY: (categoryId: string) => `/api/admin/update-category/${categoryId}`,
+    DELETE_CATEGORY: (categoryId: string) => `/api/admin/delete-category/${categoryId}`,
+    GET_ALL_USERS: "/api/admin/get-all-users",
+    GET_USER: (userId: string) => `/api/admin/get-user?userId=${userId}`,
+    UPDATE_USER_STATUS: "/api/admin/update-user-status",
+    DELETE_USER: (userId: string) => `/api/admin/delete-user?userId=${userId}`,
     STATS: "/api/admin/stats",
   },
 } as const;
