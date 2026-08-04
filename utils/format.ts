@@ -15,7 +15,8 @@ export function formatCurrency(amount: number, currency = "BDT"): string {
 /**
  * Format a date string to a human-readable format
  */
-export function formatDate(dateStr: string, formatStr = "MMM dd, yyyy"): string {
+export function formatDate(dateStr?: string | null, formatStr = "MMM dd, yyyy"): string {
+  if (!dateStr) return "—";
   try {
     return format(parseISO(dateStr), formatStr);
   } catch {
@@ -26,7 +27,8 @@ export function formatDate(dateStr: string, formatStr = "MMM dd, yyyy"): string 
 /**
  * Format a date string to a relative time (e.g., "2 hours ago")
  */
-export function formatRelativeTime(dateStr: string): string {
+export function formatRelativeTime(dateStr?: string | null): string {
+  if (!dateStr) return "—";
   try {
     return formatDistanceToNow(parseISO(dateStr), { addSuffix: true });
   } catch {

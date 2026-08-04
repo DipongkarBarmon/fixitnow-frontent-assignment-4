@@ -9,7 +9,11 @@ import {
   Settings,
   HelpCircle,
   LogOut,
-  Bell,
+  FolderTree,
+  Users,
+  Wrench,
+  Shield,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,95 +41,130 @@ export function UserMenu({ user, dashboardLink }: UserMenuProps) {
   const email = user?.email || "";
   const avatar = user?.avatar || getAvatarUrl(name);
   const initials = getInitials(name);
+  const role = user?.role || "CUSTOMER";
 
   return (
-    <>
-      {/* Notification Bell */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="relative text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-      >
-        <Bell className="size-5" />
-        <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">
-          3
-        </span>
-        <span className="sr-only">Notifications</span>
-      </Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          <Avatar className="size-8 border border-neutral-200 dark:border-neutral-700">
+            <AvatarImage src={avatar} alt={name} />
+            <AvatarFallback className="text-xs font-semibold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <span className="sr-only">User menu</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel className="font-normal">
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-semibold text-neutral-900 dark:text-white leading-none">
+              {name}
+            </p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+              {email}
+            </p>
+            <span className="mt-1 inline-flex w-fit rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+              {role === "ADMIN" ? "Administrator" : role === "TECHNICIAN" ? "Technician" : "Customer"}
+            </span>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
 
-      {/* User Avatar Dropdown */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full"
-          >
-            <Avatar className="size-8">
-              <AvatarImage src={avatar} alt={name} />
-              <AvatarFallback className="text-xs font-medium">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <span className="sr-only">User menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium">{name}</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {email}
-              </p>
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link href={dashboardLink} className="cursor-pointer">
-              <LayoutDashboard className="mr-2 size-4" />
-              Dashboard
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard/profile" className="cursor-pointer">
-              <UserIcon className="mr-2 size-4" />
-              My Profile
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard/bookings" className="cursor-pointer">
-              <Calendar className="mr-2 size-4" />
-              My Bookings
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard/payments" className="cursor-pointer">
-              <CreditCard className="mr-2 size-4" />
-              Payments
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard/settings" className="cursor-pointer">
-              <Settings className="mr-2 size-4" />
-              Settings
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/help" className="cursor-pointer">
-              <HelpCircle className="mr-2 size-4" />
-              Help Center
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => logout()}
-            className="cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-600 dark:text-red-400 dark:focus:bg-red-950 dark:focus:text-red-400"
-          >
-            <LogOut className="mr-2 size-4" />
-            Logout
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </>
+        {/* Primary Dashboard Link */}
+        <DropdownMenuItem asChild>
+          <Link href={dashboardLink} className="cursor-pointer font-medium">
+            <LayoutDashboard className="mr-2 size-4 text-blue-600 dark:text-blue-400" />
+            {role === "ADMIN" ? "Admin Console" : role === "TECHNICIAN" ? "Technician Portal" : "Customer Dashboard"}
+          </Link>
+        </DropdownMenuItem>
+
+        {/* Role-Specific Quick Links */}
+        {role === "ADMIN" && (
+          <>
+            <DropdownMenuItem asChild>
+              <Link href="/admin-dashboard/categories" className="cursor-pointer">
+                <FolderTree className="mr-2 size-4" />
+                Categories
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/admin-dashboard/users" className="cursor-pointer">
+                <Users className="mr-2 size-4" />
+                Users Moderation
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/admin-dashboard/settings" className="cursor-pointer">
+                <Settings className="mr-2 size-4" />
+                Platform Settings
+              </Link>
+            </DropdownMenuItem>
+          </>
+        )}
+
+        {role === "TECHNICIAN" && (
+          <>
+            <DropdownMenuItem asChild>
+              <Link href="/technician-dashboard/bookings" className="cursor-pointer">
+                <Calendar className="mr-2 size-4" />
+                My Job Requests
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/technician-dashboard/profile" className="cursor-pointer">
+                <UserIcon className="mr-2 size-4" />
+                Technician Profile
+              </Link>
+            </DropdownMenuItem>
+          </>
+        )}
+
+        {role === "CUSTOMER" && (
+          <>
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/bookings" className="cursor-pointer">
+                <Calendar className="mr-2 size-4" />
+                My Bookings
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/profile" className="cursor-pointer">
+                <UserIcon className="mr-2 size-4" />
+                My Profile
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/payments" className="cursor-pointer">
+                <CreditCard className="mr-2 size-4" />
+                Payment History
+              </Link>
+            </DropdownMenuItem>
+          </>
+        )}
+
+        <DropdownMenuItem asChild>
+          <Link href="/contact" className="cursor-pointer">
+            <HelpCircle className="mr-2 size-4" />
+            Help & Support
+          </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => logout()}
+          className="cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-600 dark:text-red-400 dark:focus:bg-red-950 dark:focus:text-red-400"
+        >
+          <LogOut className="mr-2 size-4" />
+          Log Out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
+

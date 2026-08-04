@@ -8,12 +8,14 @@ import {
   TrendingUp,
   ShieldCheck,
   FolderTree,
+  FolderPlus,
   Star,
   Wrench,
   BarChart3,
   Settings,
   ArrowRight,
   ShieldAlert,
+  Plus,
 } from "lucide-react";
 
 import { StatCard } from "@/components/cards/stat-card";
@@ -67,6 +69,14 @@ export default function AdminDashboard() {
           </div>
 
           <div className="flex flex-wrap gap-3">
+            <Button
+              asChild
+              className="bg-teal-500 font-semibold text-white shadow hover:bg-teal-600 dark:bg-teal-600 dark:hover:bg-teal-700"
+            >
+              <Link href="/admin-dashboard/categories/create">
+                <FolderPlus className="mr-1.5 size-4" /> Create Category
+              </Link>
+            </Button>
             <Button
               asChild
               variant="secondary"
@@ -163,7 +173,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Admin Fast Navigation Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link
           href="/admin-dashboard/users"
           className="group flex items-center justify-between rounded-xl border border-neutral-200 bg-white p-4 transition-all hover:border-blue-500 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900"
@@ -190,26 +200,26 @@ export default function AdminDashboard() {
             </div>
             <div>
               <p className="font-semibold text-neutral-900 dark:text-white">Categories</p>
-              <p className="text-xs text-neutral-500">Create & organize</p>
+              <p className="text-xs text-neutral-500">View & organize catalog</p>
             </div>
           </div>
           <ArrowRight className="size-4 text-neutral-400 transition-transform group-hover:translate-x-1" />
         </Link>
 
         <Link
-          href="/admin-dashboard/services"
-          className="group flex items-center justify-between rounded-xl border border-neutral-200 bg-white p-4 transition-all hover:border-amber-500 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900"
+          href="/admin-dashboard/categories/create"
+          className="group flex items-center justify-between rounded-xl border border-teal-200 bg-teal-50/40 p-4 transition-all hover:border-teal-500 hover:shadow-md dark:border-teal-900/50 dark:bg-teal-950/20"
         >
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
-              <Wrench className="size-5" />
+            <div className="flex size-10 items-center justify-center rounded-lg bg-teal-500 text-white shadow-sm">
+              <FolderPlus className="size-5" />
             </div>
             <div>
-              <p className="font-semibold text-neutral-900 dark:text-white">Services Catalog</p>
-              <p className="text-xs text-neutral-500">Manage all services</p>
+              <p className="font-semibold text-teal-950 dark:text-teal-200">Create Category</p>
+              <p className="text-xs text-teal-700/80 dark:text-teal-400">Add new service group</p>
             </div>
           </div>
-          <ArrowRight className="size-4 text-neutral-400 transition-transform group-hover:translate-x-1" />
+          <ArrowRight className="size-4 text-teal-600 transition-transform group-hover:translate-x-1 dark:text-teal-400" />
         </Link>
 
         <Link
@@ -221,8 +231,40 @@ export default function AdminDashboard() {
               <CreditCard className="size-5" />
             </div>
             <div>
-              <p className="font-semibold text-neutral-900 dark:text-white">Payments & Billing</p>
-              <p className="text-xs text-neutral-500">Transaction logs</p>
+              <p className="font-semibold text-neutral-900 dark:text-white">Payment History</p>
+              <p className="text-xs text-neutral-500">Transaction audit logs</p>
+            </div>
+          </div>
+          <ArrowRight className="size-4 text-neutral-400 transition-transform group-hover:translate-x-1" />
+        </Link>
+
+        <Link
+          href="/admin-dashboard/reports"
+          className="group flex items-center justify-between rounded-xl border border-neutral-200 bg-white p-4 transition-all hover:border-amber-500 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
+              <BarChart3 className="size-5" />
+            </div>
+            <div>
+              <p className="font-semibold text-neutral-900 dark:text-white">Reports & Stats</p>
+              <p className="text-xs text-neutral-500">Platform performance</p>
+            </div>
+          </div>
+          <ArrowRight className="size-4 text-neutral-400 transition-transform group-hover:translate-x-1" />
+        </Link>
+
+        <Link
+          href="/admin-dashboard/bookings"
+          className="group flex items-center justify-between rounded-xl border border-neutral-200 bg-white p-4 transition-all hover:border-purple-500 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400">
+              <Calendar className="size-5" />
+            </div>
+            <div>
+              <p className="font-semibold text-neutral-900 dark:text-white">Bookings Oversight</p>
+              <p className="text-xs text-neutral-500">All customer bookings</p>
             </div>
           </div>
           <ArrowRight className="size-4 text-neutral-400 transition-transform group-hover:translate-x-1" />

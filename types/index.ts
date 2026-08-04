@@ -46,14 +46,15 @@ export interface TokenPayload {
 
 export interface Category {
   id: string;
+  _id?: string;
   name: string;
-  slug: string;
+  slug?: string;
   description?: string;
   icon?: string;
   image?: string;
   serviceCount?: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // ==========================================

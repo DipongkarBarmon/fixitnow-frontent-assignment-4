@@ -29,12 +29,25 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
   const [user, setUser] = useState<User | null>(initialUser);
   const [isLoading, setIsLoading] = useState(!initialUser);
 
+  const handleSetUser = useCallback((newUser: User | null) => {
+    if (newUser) {
+      const normalizedRole = typeof newUser.role === "string" ? newUser.role.toUpperCase() : "CUSTOMER";
+      setUser({ ...newUser, role: normalizedRole as any });
+    } else {
+      setUser(null);
+    }
+  }, []);
+
   const fetchProfile = useCallback(async (signal: AbortSignal) => {
     try {
       const res = await fetch("/api/auth/profile", { signal });
       const data = (await res.json()) as { success: boolean; data: User | null };
       if (data.success && data.data) {
-        setUser(data.data);
+        const rawUser = data.data;
+        const normalizedRole = typeof rawUser.role === "string" ? rawUser.role.toUpperCase() : "CUSTOMER";
+        setUser({ ...rawUser, role: normalizedRole as any });
+      } else {
+        setUser(null);
       }
     } catch {
       if (!signal.aborted) {
@@ -72,7 +85,7 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
         user,
         isAuthenticated: !!user,
         isLoading,
-        setUser,
+        setUser: handleSetUser,
         logout,
       }}
     >

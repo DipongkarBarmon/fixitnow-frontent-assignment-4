@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 const authRoutes = ["/login", "/register", "/forgot-password", "/reset-password"];
 
-function getRoleFromToken(token?: string): string | null {
+function parseJwtPayload(token?: string): Record<string, any> | null {
   if (!token) return null;
   try {
     const parts = token.split(".");
@@ -16,8 +16,33 @@ function getRoleFromToken(token?: string): string | null {
         .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
         .join("")
     );
-    const parsed = JSON.parse(jsonPayload);
-    const role = parsed?.role || parsed?.user?.role || parsed?.roleName;
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
+
+function isTokenExpired(token?: string): boolean {
+  if (!token) return true;
+  try {
+    const payload = parseJwtPayload(token);
+    if (!payload) return true;
+    if (payload.exp && typeof payload.exp === "number") {
+      // Check expiration in seconds (with 10s grace period)
+      return Date.now() >= (payload.exp - 10) * 1000;
+    }
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+function getRoleFromToken(token?: string): string | null {
+  if (!token) return null;
+  try {
+    const payload = parseJwtPayload(token);
+    if (!payload) return null;
+    const role = payload?.role || payload?.user?.role || payload?.roleName;
     return typeof role === "string" ? role.toUpperCase() : null;
   } catch {
     return null;
@@ -31,11 +56,13 @@ function getDashboardByRole(role?: string | null): string {
 }
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
   const accessToken = request.cookies.get("accessToken")?.value;
-  const role = getRoleFromToken(accessToken);
+  const expired = isTokenExpired(accessToken);
+  const isValidAuth = !!accessToken && !expired;
+  const role = isValidAuth ? getRoleFromToken(accessToken) : null;
 
-  // Check if the path starts with any public route pattern
+  // Check route types
   const isAuthRoute = authRoutes.some((route) => pathname === route);
   const isDashboardRoute =
     pathname.startsWith("/dashboard") ||
@@ -46,21 +73,36 @@ export function middleware(request: NextRequest) {
   // Allow API routes
   if (isApiRoute) return NextResponse.next();
 
-  // Redirect authenticated users away from auth pages to their role-specific dashboard
-  if (isAuthRoute && accessToken) {
+  // If visiting auth pages (login/register) and user ALREADY has a VALID non-expired session,
+  // redirect them to their dashboard unless ?force=true is passed
+  if (isAuthRoute && isValidAuth && !searchParams.has("force")) {
     const destination = getDashboardByRole(role);
     return NextResponse.redirect(new URL(destination, request.url));
   }
 
-  // Protect dashboard routes
-  if (isDashboardRoute && !accessToken) {
+  // If visiting auth pages and the cookie has an EXPIRED or INVALID token,
+  // clear the stale cookies so the login/register forms can be used cleanly
+  if (isAuthRoute && accessToken && !isValidAuth) {
+    const response = NextResponse.next();
+    response.cookies.delete("accessToken");
+    response.cookies.delete("refreshToken");
+    return response;
+  }
+
+  // Protect dashboard routes: if not authenticated or token expired, redirect to login
+  if (isDashboardRoute && !isValidAuth) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
+    const response = NextResponse.redirect(loginUrl);
+    if (accessToken && !isValidAuth) {
+      response.cookies.delete("accessToken");
+      response.cookies.delete("refreshToken");
+    }
+    return response;
   }
 
   // Role-based protection on dashboard routes
-  if (isDashboardRoute && accessToken) {
+  if (isDashboardRoute && isValidAuth) {
     if (pathname.startsWith("/admin-dashboard") && role !== "ADMIN") {
       return NextResponse.redirect(new URL(getDashboardByRole(role), request.url));
     }

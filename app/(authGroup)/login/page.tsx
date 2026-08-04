@@ -11,15 +11,15 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="relative min-h-screen w-full bg-neutral-50 dark:bg-neutral-950">
+    <div className="relative min-h-[calc(100vh-4rem)] w-full bg-neutral-50 dark:bg-neutral-950">
       {/* Decorative gradient background */}
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -right-1/2 -top-1/2 h-96 w-96 rounded-full bg-blue-400/20 blur-3xl dark:bg-blue-600/10" />
         <div className="absolute -left-1/4 bottom-0 h-80 w-80 rounded-full bg-purple-400/20 blur-3xl dark:bg-purple-600/10" />
       </div>
 
       {/* Content */}
-      <div className="relative flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+      <div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
         {/* Main container - Two column layout */}
         <div className="w-full max-w-6xl grid gap-8 md:grid-cols-2 items-center">
           {/* Left: Branding Section */}

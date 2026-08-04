@@ -58,9 +58,9 @@ export const API_ROUTES = {
     BY_SERVICE: (serviceId: string) => `/api/reviews/service/${serviceId}`,
   },
   ADMIN: {
-    CREATE_CATEGORY: "/api/admin/create-category",
-    UPDATE_CATEGORY: (categoryId: string) => `/api/admin/update-category/${categoryId}`,
-    DELETE_CATEGORY: (categoryId: string) => `/api/admin/delete-category/${categoryId}`,
+    CREATE_CATEGORY: "/api/category/create-category",
+    UPDATE_CATEGORY: (categoryId: string) => `/api/category/update-category/${categoryId}`,
+    DELETE_CATEGORY: (categoryId: string) => `/api/category/delete-category/${categoryId}`,
     GET_ALL_USERS: "/api/admin/get-all-users",
     GET_USER: (userId: string) => `/api/admin/get-user?userId=${userId}`,
     UPDATE_USER_STATUS: "/api/admin/update-user-status",
@@ -155,11 +155,11 @@ export const TECHNICIAN_SIDEBAR_ITEMS = [
 
 export const ADMIN_SIDEBAR_ITEMS = [
   { title: "Overview", href: "/admin-dashboard", icon: "LayoutDashboard" },
-  { title: "Users", href: "/admin-dashboard/users", icon: "Users" },
   { title: "Categories", href: "/admin-dashboard/categories", icon: "FolderTree" },
-  { title: "Services", href: "/admin-dashboard/services", icon: "Wrench" },
+  { title: "Create Category", href: "/admin-dashboard/categories/create", icon: "FolderPlus" },
+  { title: "Users", href: "/admin-dashboard/users", icon: "Users" },
+  { title: "Payment History", href: "/admin-dashboard/payments", icon: "CreditCard" },
   { title: "Bookings", href: "/admin-dashboard/bookings", icon: "Calendar" },
-  { title: "Payments", href: "/admin-dashboard/payments", icon: "CreditCard" },
   { title: "Reports", href: "/admin-dashboard/reports", icon: "BarChart3" },
   { title: "Settings", href: "/admin-dashboard/settings", icon: "Settings" },
 ] as const;
