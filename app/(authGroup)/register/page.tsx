@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { RegisterForm } from "../_components/registerForm";
+import RegisterForm from "../_components/registerForm";
+ 
 
 export const metadata: Metadata = { title: "Register - FixItNow", description: "Create your FixItNow account." };
 
