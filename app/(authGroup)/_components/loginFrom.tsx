@@ -25,14 +25,17 @@ import {
 import { loginSchema } from '../_libs/validations'
 import z from 'zod'
 import { loginAction } from '../_actions/authAction'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useAuth } from '@/providers/auth-provider'
   
 export default function LoginForm() {
- 
-  const router = useRouter();
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { setUser } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  type LoginInput = z.input<typeof loginSchema>;
+  type LoginInput = z.input<typeof loginSchema>
+
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -41,30 +44,56 @@ export default function LoginForm() {
       rememberMe: false,
     },
   })
- 
 
   async function onSubmit(values: LoginInput) {
-    
     setIsLoading(true)
-    
-  
-      try {
-        const result = await loginAction(values)
 
-        if (result.success) {
-          toast.success(result.message)
-          // TODO: Redirect to dashboard after successful login
-          router.replace('/dashboard')
-        } else {
-          toast.error(result.message)
+    try {
+      const result = await loginAction(values)
+
+      if (result.success) {
+        toast.success(result.message || 'Login successful!')
+
+        if (result.data?.user) {
+          setUser(result.data.user)
         }
-      } catch (error) {
-        toast.error('An unexpected error occurred')
-        console.error('[LoginForm] Error:', error)
-      } finally {
-        setIsLoading(false)
+
+        // If a redirect URL was provided in query params (e.g. from protected route), use it
+        const redirectParam = searchParams.get('redirect')
+        if (redirectParam && redirectParam.startsWith('/')) {
+          router.replace(redirectParam)
+          return
+        }
+
+        // Determine destination dashboard based on role
+        const role = result.data?.user?.role || result.data?.role
+        let targetDashboard = '/dashboard'
+
+        switch (role) {
+          case 'ADMIN':
+            targetDashboard = '/admin-dashboard'
+            break
+          case 'TECHNICIAN':
+            targetDashboard = '/technician-dashboard'
+            break
+          case 'CUSTOMER':
+          default:
+            targetDashboard = '/dashboard'
+            break
+        }
+
+        router.replace(targetDashboard)
+      } else {
+        toast.error(result.message || 'Invalid credentials')
       }
+    } catch (error) {
+      toast.error('An unexpected error occurred')
+      console.error('[LoginForm] Error:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
+
   return (
     <Card className="w-full max-w-md border-neutral-200 shadow-lg dark:border-neutral-800">
       <CardHeader className="space-y-1">

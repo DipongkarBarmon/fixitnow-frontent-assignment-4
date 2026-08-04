@@ -1,62 +1,68 @@
-"use server"
-
+"use server";
 
 import { cookies } from "next/headers";
 
-
-
 type loginActionState = {
-  email: string,
-  password: string,
-
-}
-
-
+  email: string;
+  password: string;
+};
 
 export const loginAction = async (formData: loginActionState) => {
-
   const { email, password } = formData;
+  const payload = { email, password };
 
-  console.log(email, password);
+  const backendUrl = process.env.BACKEND_API_URL || "http://localhost:5000";
 
-  const payload = {
-    email,
-    password
+  try {
+    const res = await fetch(`${backendUrl}/api/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      cache: "no-store",
+    });
+
+    let result;
+    try {
+      result = await res.json();
+    } catch {
+      return {
+        success: false,
+        message: `Backend returned invalid response (${res.status} ${res.statusText})`,
+      };
+    }
+
+    if (result.success && result.data?.accessToken) {
+      const cookieStore = await cookies();
+      const isProduction = process.env.NODE_ENV === "production";
+
+      cookieStore.set("accessToken", result.data.accessToken, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24, // 1 day
+      });
+
+      if (result.data?.refreshToken) {
+        cookieStore.set("refreshToken", result.data.refreshToken, {
+          httpOnly: true,
+          secure: isProduction,
+          sameSite: "lax",
+          maxAge: 60 * 60 * 24 * 7, // 7 days
+        });
+      }
+    }
+
+    return result;
+  } catch (error: any) {
+    console.error("[loginAction] Connection failed:", error?.message || error);
+    return {
+      success: false,
+      message:
+        "Unable to connect to the backend server. Please make sure the backend is running at " +
+        backendUrl,
+    };
   }
-
-
-  const res = await fetch(`${process.env.BACKEND_API_URL}/api/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  })
-
-  const result = await res.json()
-
-  if (result.success) {
-    const cookieStore = await cookies()
-
-    cookieStore.set("accessToken", result.data?.accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24, //7 days 
-
-    })
-
-    cookieStore.set("refreshToken", result.data?.refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, //7 days 
-
-    })
-
-    //  redirect("/dashboard","replace")
-  }
-
-  return result
-
-}   
+};
+   

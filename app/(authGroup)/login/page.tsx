@@ -1,7 +1,6 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import LoginForm from '../_components/loginFrom'
- 
- 
 
 export const dynamic = 'force-dynamic'
 
@@ -115,10 +114,13 @@ export default function LoginPage() {
 
           {/* Right: Login Card */}
           <div className="flex items-center justify-center">
-            <LoginForm />
+            <Suspense fallback={<div className="h-96 w-full max-w-md animate-pulse rounded-lg bg-neutral-200 dark:bg-neutral-800" />}>
+              <LoginForm />
+            </Suspense>
           </div>
         </div>
       </div>
     </div>
   )
 }
+
