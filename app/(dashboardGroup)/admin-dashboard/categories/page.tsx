@@ -29,6 +29,14 @@ import {
   Flame,
   Tv,
   Shield,
+  LayoutGrid,
+  List,
+  ArrowUpDown,
+  Search,
+  SlidersHorizontal,
+  ImageIcon,
+  Link as LinkIcon,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -59,13 +67,78 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import {
   useCategories,
   useCategoryDetail,
-  useCreateCategory,
-  useUpdateCategory,
-  useDeleteCategory,
 } from "@/hooks";
+import createCategoryAction, {
+  updateCategoryAction,
+  deleteCategoryAction,
+} from "@/app/(dashboardGroup)/admin-dashboard/_actions/categoryAction";
 import { formatDate } from "@/utils/format";
 import { categorySchema, type CategoryFormValues } from "@/lib/validations";
 import type { Category } from "@/types";
+
+// Curated Category Image Presets
+const CURATED_IMAGE_PRESETS = [
+  {
+    id: "electrical",
+    label: "Electrical",
+    url: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "plumbing",
+    label: "Plumbing",
+    url: "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "cleaning",
+    label: "Cleaning",
+    url: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "carpentry",
+    label: "Carpentry",
+    url: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "painting",
+    label: "Painting",
+    url: "https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "appliance",
+    label: "HVAC & AC",
+    url: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "electronics",
+    label: "Electronics",
+    url: "https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "security",
+    label: "Security",
+    url: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "roofing",
+    label: "Roofing",
+    url: "https://images.unsplash.com/photo-1632778149955-e80f8ceca2e8?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "gardening",
+    label: "Gardening",
+    url: "https://images.unsplash.com/photo-1558904541-efa8c4a08931?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "masonry",
+    label: "Masonry",
+    url: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "solar",
+    label: "Solar Energy",
+    url: "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80",
+  },
+];
 
 const ICON_PRESETS = [
   { label: "Repair", value: "Wrench", icon: Wrench },
@@ -148,18 +221,34 @@ function CategoryDetailDialog({
           </div>
         ) : (
           <div className="space-y-4 pt-2">
-            {/* Main Header Preview */}
-            <div className="flex items-start gap-3.5 rounded-xl border border-neutral-200 bg-neutral-50/70 p-4 dark:border-neutral-800 dark:bg-neutral-900/50">
-              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 font-bold text-base shadow-sm">
-                {category.icon ? category.icon.slice(0, 2).toUpperCase() : <FolderTree className="size-6" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-neutral-900 dark:text-white text-base">
-                  {category.name}
-                </h3>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 line-clamp-2 leading-relaxed">
-                  {category.description || "No description provided."}
-                </p>
+            {/* Main Header Preview with Cover Image & Icon */}
+            <div className="overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900/50">
+              {category.image || (category.icon && category.icon.startsWith("http")) ? (
+                <div className="relative h-28 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+                  <img
+                    src={category.image || category.icon}
+                    alt={category.name}
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                </div>
+              ) : null}
+              <div className="p-4 flex items-start gap-3.5">
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 font-bold text-base shadow-sm">
+                  {category.icon && !category.icon.startsWith("http") ? (
+                    category.icon.slice(0, 2).toUpperCase()
+                  ) : (
+                    <FolderTree className="size-5" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-neutral-900 dark:text-white text-base">
+                    {category.name}
+                  </h3>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 line-clamp-2 leading-relaxed">
+                    {category.description || "No description provided."}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -248,17 +337,20 @@ export default function AdminCategoriesPage() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
 
-  // Queries & Mutations
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name" | "services">("newest");
+
+  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Queries
   const {
     data: categoriesRes,
     isLoading,
     isRefetching,
     refetch: refetchCategories,
   } = useCategories();
-
-  const createMutation = useCreateCategory();
-  const updateMutation = useUpdateCategory();
-  const deleteMutation = useDeleteCategory();
 
   const categories: Category[] = categoriesRes?.data ?? [];
 
@@ -274,81 +366,110 @@ export default function AdminCategoriesPage() {
 
   const handleOpenEdit = (category: Category) => {
     setEditingCategory(category);
+    const currentImg = category.image || (category.icon && category.icon.startsWith("http") ? category.icon : category.icon || "");
     editForm.reset({
       name: category.name,
       description: category.description || "",
-      icon: category.icon || "",
+      icon: currentImg,
     });
   };
 
   const handleCreateSubmit = async (values: CategoryFormValues) => {
+    setIsCreating(true);
     try {
-      const res = await createMutation.mutateAsync({
+      const res = await createCategoryAction({
         name: values.name.trim(),
         description: values.description?.trim(),
         icon: values.icon?.trim(),
       });
-      if (res?.success === false) {
-        toast.error(res?.message || "Failed to create category");
+      if (!res.success) {
+        toast.error(res.message || "Failed to create category");
         return;
       }
-      toast.success("Category created successfully!");
+      toast.success(res.message || "Category created successfully!");
       setIsCreateOpen(false);
       createForm.reset();
       void refetchCategories();
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } }; message?: string };
-      toast.error(error.response?.data?.message || error.message || "Failed to create category");
+      const error = err as { message?: string };
+      toast.error(error.message || "Failed to create category");
+    } finally {
+      setIsCreating(false);
     }
   };
 
   const handleEditSubmit = async (values: CategoryFormValues) => {
     if (!editingCategory) return;
+    setIsUpdating(true);
     try {
-      const res = await updateMutation.mutateAsync({
-        id: editingCategory.id,
-        data: {
-          name: values.name.trim(),
-          description: values.description?.trim(),
-          icon: values.icon?.trim(),
-        },
+      const res = await updateCategoryAction(editingCategory.id, {
+        name: values.name.trim(),
+        description: values.description?.trim(),
+        icon: values.icon?.trim(),
       });
-      if (res?.success === false) {
-        toast.error(res?.message || "Failed to update category");
+      if (!res.success) {
+        toast.error(res.message || "Failed to update category");
         return;
       }
-      toast.success("Category updated successfully!");
+      toast.success(res.message || "Category updated successfully!");
       setEditingCategory(null);
       void refetchCategories();
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } }; message?: string };
-      toast.error(error.response?.data?.message || error.message || "Failed to update category");
+      const error = err as { message?: string };
+      toast.error(error.message || "Failed to update category");
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const handleDelete = async () => {
     if (!deletingCategory) return;
+    setIsDeleting(true);
     try {
-      const res = await deleteMutation.mutateAsync(deletingCategory.id);
-      if (res?.success === false) {
-        toast.error(res?.message || "Failed to delete category");
+      const res = await deleteCategoryAction(deletingCategory.id);
+      if (!res.success) {
+        toast.error(res.message || "Failed to delete category");
         return;
       }
-      toast.success(`Category "${deletingCategory.name}" deleted successfully`);
+      toast.success(res.message || `Category "${deletingCategory.name}" deleted successfully`);
       setDeletingCategory(null);
       void refetchCategories();
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } }; message?: string };
-      toast.error(error.response?.data?.message || error.message || "Failed to delete category");
+      const error = err as { message?: string };
+      toast.error(error.message || "Failed to delete category");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  const filteredCategories = categories.filter((c) =>
-    !search ||
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.description?.toLowerCase().includes(search.toLowerCase()) ||
-    c.slug?.toLowerCase().includes(search.toLowerCase())
-  );
+  // Filter & Sort
+  const filteredAndSortedCategories = categories
+    .filter((c) => {
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return (
+        c.name.toLowerCase().includes(q) ||
+        c.description?.toLowerCase().includes(q) ||
+        c.slug?.toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) => {
+      if (sortBy === "name") {
+        return a.name.localeCompare(b.name);
+      }
+      if (sortBy === "oldest") {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeA - timeB;
+      }
+      if (sortBy === "services") {
+        return (b.serviceCount || 0) - (a.serviceCount || 0);
+      }
+      // default: newest
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return timeB - timeA;
+    });
 
   const totalServices = categories.reduce((sum, cat) => sum + (cat.serviceCount || 0), 0);
 
@@ -357,22 +478,35 @@ export default function AdminCategoriesPage() {
       key: "name",
       header: "Category Name",
       sortable: true,
-      cell: (cat) => (
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 font-bold text-xs shadow-sm">
-            {cat.icon ? cat.icon.slice(0, 2).toUpperCase() : <FolderTree className="size-4" />}
+      cell: (cat) => {
+        const imageUrl = cat.image || (cat.icon && cat.icon.startsWith("http") ? cat.icon : null);
+        return (
+          <div className="flex items-center gap-3">
+            {imageUrl ? (
+              <div className="relative size-9.5 shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 shadow-xs dark:border-neutral-800 dark:bg-neutral-800">
+                <img
+                  src={imageUrl}
+                  alt={cat.name}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="flex size-9.5 shrink-0 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 font-bold text-xs shadow-xs">
+                {cat.icon ? cat.icon.slice(0, 2).toUpperCase() : <FolderTree className="size-4" />}
+              </div>
+            )}
+            <div className="min-w-0">
+              <button
+                onClick={() => setViewingCategoryId(cat.id)}
+                className="text-left font-semibold text-neutral-900 hover:text-teal-600 dark:text-white dark:hover:text-teal-400 text-sm transition-colors truncate block"
+              >
+                {cat.name}
+              </button>
+              <p className="text-xs text-neutral-500 line-clamp-1">{cat.description || "No description"}</p>
+            </div>
           </div>
-          <div>
-            <button
-              onClick={() => setViewingCategoryId(cat.id)}
-              className="text-left font-semibold text-neutral-900 hover:text-teal-600 dark:text-white dark:hover:text-teal-400 text-sm transition-colors"
-            >
-              {cat.name}
-            </button>
-            <p className="text-xs text-neutral-500 line-clamp-1">{cat.description || "No description"}</p>
-          </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: "slug",
@@ -529,16 +663,252 @@ export default function AdminCategoriesPage() {
         </Card>
       </div>
 
-      {/* DataTable */}
-      <DataTable
-        columns={columns}
-        data={filteredCategories}
-        isLoading={isLoading}
-        searchable
-        searchPlaceholder="Search categories by name, slug, or description..."
-        emptyMessage="No categories found"
-        emptyDescription="Create your first category to start organizing platform services."
-      />
+      {/* Controls Bar: Search, Sort, View Toggle */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-neutral-200 bg-white p-3 shadow-xs dark:border-neutral-800 dark:bg-neutral-950">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
+          <Input
+            placeholder="Search categories by name, slug, or description..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 text-sm h-9 border-neutral-200 bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-900"
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Sorting */}
+          <div className="flex items-center gap-1.5">
+            <SlidersHorizontal className="size-3.5 text-neutral-400" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="name">Alphabetical (A-Z)</option>
+              <option value="services">Most Services</option>
+            </select>
+          </div>
+
+          {/* View Switcher (Grid vs Table) */}
+          <div className="flex items-center rounded-lg border border-neutral-200 bg-neutral-100 p-0.5 dark:border-neutral-800 dark:bg-neutral-900">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                viewMode === "grid"
+                  ? "bg-white text-teal-700 shadow-xs dark:bg-neutral-800 dark:text-teal-300"
+                  : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400"
+              }`}
+              title="Card Grid View"
+            >
+              <LayoutGrid className="size-3.5" />
+              <span className="hidden md:inline">Cards</span>
+            </button>
+            <button
+              onClick={() => setViewMode("table")}
+              className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                viewMode === "table"
+                  ? "bg-white text-teal-700 shadow-xs dark:bg-neutral-800 dark:text-teal-300"
+                  : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400"
+              }`}
+              title="Table View"
+            >
+              <List className="size-3.5" />
+              <span className="hidden md:inline">Table</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content: Card Grid View OR Table View */}
+      {viewMode === "grid" ? (
+        <div>
+          {isLoading ? (
+            /* Skeleton Loading Grid */
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="animate-pulse overflow-hidden rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
+                >
+                  <div className="h-32 w-full rounded-xl bg-neutral-200 dark:bg-neutral-800" />
+                  <div className="mt-4 h-5 w-3/4 rounded bg-neutral-200 dark:bg-neutral-800" />
+                  <div className="mt-2 h-4 w-full rounded bg-neutral-200 dark:bg-neutral-800" />
+                  <div className="mt-4 flex items-center justify-between pt-2 border-t border-neutral-100 dark:border-neutral-800">
+                    <div className="h-4 w-1/3 rounded bg-neutral-200 dark:bg-neutral-800" />
+                    <div className="h-6 w-16 rounded bg-neutral-200 dark:bg-neutral-800" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredAndSortedCategories.length === 0 ? (
+            /* Empty State */
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-50/50 py-16 px-4 text-center dark:border-neutral-800 dark:bg-neutral-900/30">
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-teal-100 text-teal-600 dark:bg-teal-900/40 dark:text-teal-400 shadow-sm">
+                <FolderTree className="size-7" />
+              </div>
+              <h3 className="mt-4 text-base font-bold text-neutral-900 dark:text-white">
+                {search ? "No matching categories" : "No categories found"}
+              </h3>
+              <p className="mt-1 max-w-sm text-xs text-neutral-500 dark:text-neutral-400">
+                {search
+                  ? `No category matches "${search}". Try another keyword or clear search.`
+                  : "Create your first category to start organizing platform services."}
+              </p>
+              <div className="mt-5 flex gap-2">
+                {search && (
+                  <Button variant="outline" size="sm" onClick={() => setSearch("")}>
+                    Clear Search
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  onClick={() => setIsCreateOpen(true)}
+                  className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
+                >
+                  <Plus className="size-3.5" /> Quick Add Category
+                </Button>
+              </div>
+            </div>
+          ) : (
+            /* Category Card Grid */
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filteredAndSortedCategories.map((category) => {
+                const imageUrl =
+                  category.image ||
+                  (category.icon && category.icon.startsWith("http") ? category.icon : null);
+
+                return (
+                  <Card
+                    key={category.id}
+                    className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-neutral-200/80 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-teal-500/50 hover:shadow-lg dark:border-neutral-800 dark:bg-neutral-900"
+                  >
+                    <div>
+                      {/* Card Header Media */}
+                      <div className="relative h-36 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={category.name}
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-teal-500/10 via-teal-600/20 to-teal-800/30">
+                            <FolderTree className="size-12 text-teal-600/40" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+
+                        {/* Top Badges */}
+                        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between">
+                          <Badge className="bg-black/60 backdrop-blur-md text-white border-white/20 text-[10px] font-semibold px-2 py-0.5 shadow-sm">
+                            <Layers className="size-3 mr-1 text-teal-400 inline" />
+                            {category.serviceCount ?? 0} Services
+                          </Badge>
+                          <Badge variant="outline" className="bg-white/80 backdrop-blur-md text-neutral-800 border-white/40 text-[10px] font-mono px-1.5 py-0.5 dark:bg-black/80 dark:text-neutral-200">
+                            /{category.slug || "service"}
+                          </Badge>
+                        </div>
+
+                        {/* Bottom Floating Icon Badge */}
+                        <div className="absolute bottom-2.5 left-3 flex items-center gap-2">
+                          <div className="flex size-9 items-center justify-center rounded-xl bg-white/95 text-teal-700 shadow-md backdrop-blur-md dark:bg-neutral-900/95 dark:text-teal-300 font-bold text-xs">
+                            {category.icon && !category.icon.startsWith("http") ? (
+                              category.icon.slice(0, 2).toUpperCase()
+                            ) : (
+                              <FolderTree className="size-4" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card Content Body */}
+                      <div className="p-4 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <button
+                            onClick={() => setViewingCategoryId(category.id)}
+                            className="text-left font-bold text-neutral-900 hover:text-teal-600 dark:text-white dark:hover:text-teal-400 text-base transition-colors line-clamp-1 group-hover:text-teal-600 dark:group-hover:text-teal-400"
+                            title={category.name}
+                          >
+                            {category.name}
+                          </button>
+                        </div>
+
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2 leading-relaxed min-h-[32px]">
+                          {category.description || "No description provided for this category."}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Card Footer Actions & Date */}
+                    <div className="p-4 pt-0">
+                      <div className="flex items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800/80">
+                        <div className="flex items-center gap-1 text-[11px] text-neutral-400">
+                          <Calendar className="size-3 text-neutral-400" />
+                          <span>{formatDate(category.createdAt)}</span>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7.5 text-neutral-500 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-950/50"
+                            title="View Details"
+                            onClick={() => setViewingCategoryId(category.id)}
+                          >
+                            <Eye className="size-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7.5 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 dark:hover:text-white dark:hover:bg-neutral-800"
+                            title="Edit Category"
+                            onClick={() => handleOpenEdit(category)}
+                          >
+                            <Edit2 className="size-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50"
+                            title="Delete Category"
+                            onClick={() => setDeletingCategory(category)}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                          <Button
+                            asChild
+                            variant="ghost"
+                            size="icon"
+                            className="size-7.5 text-teal-600 hover:text-teal-800 hover:bg-teal-50 dark:hover:bg-teal-950/50"
+                            title="Open in Marketplace"
+                          >
+                            <Link href={`/services?category=${category.slug || category.id}`} target="_blank">
+                              <ExternalLink className="size-3.5" />
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Data Table View */
+        <DataTable
+          columns={columns}
+          data={filteredAndSortedCategories}
+          isLoading={isLoading}
+          searchable={false}
+          emptyMessage="No categories found"
+          emptyDescription="Create your first category to start organizing platform services."
+        />
+      )}
 
       {/* View Category Detail Dialog (Fetches via /get-category/:categoryId) */}
       <CategoryDetailDialog
@@ -550,7 +920,7 @@ export default function AdminCategoriesPage() {
 
       {/* Create Category Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[540px]">
           <DialogHeader>
             <div className="flex items-center gap-2 text-teal-600 dark:text-teal-400">
               <FolderPlus className="size-5" />
@@ -577,44 +947,96 @@ export default function AdminCategoriesPage() {
                 )}
               />
 
+              {/* Image URL & Preset Selection */}
               <FormField
                 control={createForm.control}
                 name="icon"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category Icon</FormLabel>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {ICON_PRESETS.map((preset) => {
-                        const IconComp = preset.icon;
-                        const isSelected = field.value === preset.value;
-                        return (
-                          <button
-                            key={preset.value}
-                            type="button"
-                            onClick={() => createForm.setValue("icon", preset.value)}
-                            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${
-                              isSelected
-                                ? "border-teal-500 bg-teal-50 text-teal-700 shadow-sm dark:border-teal-500 dark:bg-teal-950/60 dark:text-teal-300"
-                                : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                            }`}
-                          >
-                            <IconComp className="size-3.5" />
-                            <span>{preset.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div className="mt-1.5">
-                      <Input
-                        placeholder="Or type custom icon name (e.g. Bolt, Shield)"
-                        value={field.value ?? ""}
-                        onChange={(e) => field.onChange(e.target.value)}
-                        className="text-xs"
-                      />
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const isImgValid = field.value?.startsWith("http://") || field.value?.startsWith("https://");
+                  return (
+                    <FormItem className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <FormLabel className="flex items-center gap-1.5">
+                          <ImageIcon className="size-3.5 text-teal-600 dark:text-teal-400" />
+                          <span>Image URL</span>
+                        </FormLabel>
+                        <span className="text-[11px] text-neutral-400">Web image link or preset</span>
+                      </div>
+
+                      {/* Image Input with Thumbnail Preview */}
+                      <div className="flex gap-2 items-center">
+                        <div className="relative flex-1">
+                          <Input
+                            placeholder="https://images.unsplash.com/... (paste image link)"
+                            value={field.value ?? ""}
+                            onChange={(e) => field.onChange(e.target.value)}
+                            className="pl-8 pr-8 text-xs font-mono"
+                          />
+                          <LinkIcon className="absolute left-2.5 top-3 size-3.5 text-neutral-400" />
+                          {field.value && (
+                            <button
+                              type="button"
+                              onClick={() => field.onChange("")}
+                              className="absolute right-2.5 top-2.5 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+                            >
+                              <X className="size-4" />
+                            </button>
+                          )}
+                        </div>
+
+                        {isImgValid && (
+                          <div className="relative size-9 shrink-0 overflow-hidden rounded-lg border border-teal-500/40 shadow-xs bg-neutral-100 dark:bg-neutral-800">
+                            <img
+                              src={field.value}
+                              alt="Preview"
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Curated Presets Grid */}
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center justify-between text-[11px] text-neutral-500">
+                          <span className="font-medium text-neutral-700 dark:text-neutral-300">
+                            Or choose from presets:
+                          </span>
+                          <span>Click to apply</span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-1.5 max-h-36 overflow-y-auto pr-1 scrollbar-thin">
+                          {CURATED_IMAGE_PRESETS.map((preset) => {
+                            const isSelected = field.value === preset.url;
+                            return (
+                              <button
+                                key={preset.id}
+                                type="button"
+                                onClick={() => field.onChange(preset.url)}
+                                className={`group relative overflow-hidden rounded-lg border text-left transition-all ${
+                                  isSelected
+                                    ? "border-teal-500 ring-2 ring-teal-500/30"
+                                    : "border-neutral-200 bg-white hover:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-900"
+                                }`}
+                              >
+                                <div className="relative h-10 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+                                  <img
+                                    src={preset.url}
+                                    alt={preset.label}
+                                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                                  <span className="absolute bottom-0.5 left-1 right-1 truncate text-[9px] font-bold text-white">
+                                    {preset.label}
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
 
               <FormField
@@ -622,7 +1044,7 @@ export default function AdminCategoriesPage() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category Description *</FormLabel>
+                    <FormLabel>Category Description</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Brief summary of services included in this category..."
@@ -646,9 +1068,9 @@ export default function AdminCategoriesPage() {
                 <Button
                   type="submit"
                   className="bg-teal-600 hover:bg-teal-700 text-white"
-                  disabled={createMutation.isPending}
+                  disabled={isCreating}
                 >
-                  {createMutation.isPending ? (
+                  {isCreating ? (
                     <>
                       <Loader2 className="size-4 animate-spin mr-2" /> Creating...
                     </>
@@ -664,7 +1086,7 @@ export default function AdminCategoriesPage() {
 
       {/* Edit Category Dialog */}
       <Dialog open={!!editingCategory} onOpenChange={(open) => !open && setEditingCategory(null)}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[540px]">
           <DialogHeader>
             <div className="flex items-center gap-2 text-teal-600 dark:text-teal-400">
               <Edit2 className="size-5" />
@@ -677,6 +1099,7 @@ export default function AdminCategoriesPage() {
 
           <Form {...editForm}>
             <form onSubmit={editForm.handleSubmit(handleEditSubmit)} className="space-y-4">
+              {/* Field 1: Category Name */}
               <FormField
                 control={editForm.control}
                 name="name"
@@ -684,53 +1107,106 @@ export default function AdminCategoriesPage() {
                   <FormItem>
                     <FormLabel>Category Name *</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input placeholder="e.g. Electrical & Wiring" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
+              {/* Field 2: Image URL with Live Thumbnail Preview & One-Click Presets */}
               <FormField
                 control={editForm.control}
                 name="icon"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category Icon</FormLabel>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {ICON_PRESETS.map((preset) => {
-                        const IconComp = preset.icon;
-                        const isSelected = field.value === preset.value;
-                        return (
-                          <button
-                            key={preset.value}
-                            type="button"
-                            onClick={() => editForm.setValue("icon", preset.value)}
-                            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${
-                              isSelected
-                                ? "border-teal-500 bg-teal-50 text-teal-700 shadow-sm dark:border-teal-500 dark:bg-teal-950/60 dark:text-teal-300"
-                                : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                            }`}
-                          >
-                            <IconComp className="size-3.5" />
-                            <span>{preset.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div className="mt-1.5">
-                      <Input
-                        placeholder="Or type custom icon name (e.g. Bolt, Shield)"
-                        value={field.value ?? ""}
-                        onChange={(e) => field.onChange(e.target.value)}
-                        className="text-xs"
-                      />
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const isImgValid = field.value?.startsWith("http://") || field.value?.startsWith("https://");
+                  return (
+                    <FormItem className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <FormLabel className="flex items-center gap-1.5">
+                          <ImageIcon className="size-3.5 text-teal-600 dark:text-teal-400" />
+                          <span>Image URL</span>
+                        </FormLabel>
+                        <span className="text-[11px] text-neutral-400">Web image link or preset</span>
+                      </div>
+
+                      {/* URL input + live preview */}
+                      <div className="flex gap-2 items-center">
+                        <div className="relative flex-1">
+                          <Input
+                            placeholder="https://images.unsplash.com/... (paste image link)"
+                            value={field.value ?? ""}
+                            onChange={(e) => field.onChange(e.target.value)}
+                            className="pl-8 pr-8 text-xs font-mono"
+                          />
+                          <LinkIcon className="absolute left-2.5 top-3 size-3.5 text-neutral-400" />
+                          {field.value && (
+                            <button
+                              type="button"
+                              onClick={() => field.onChange("")}
+                              className="absolute right-2.5 top-2.5 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+                            >
+                              <X className="size-4" />
+                            </button>
+                          )}
+                        </div>
+
+                        {isImgValid && (
+                          <div className="relative size-9 shrink-0 overflow-hidden rounded-lg border border-teal-500/40 shadow-xs bg-neutral-100 dark:bg-neutral-800">
+                            <img
+                              src={field.value}
+                              alt="Preview"
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* One-Click Presets Selection */}
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center justify-between text-[11px] text-neutral-500">
+                          <span className="font-medium text-neutral-700 dark:text-neutral-300">
+                            Or choose from presets:
+                          </span>
+                          <span>Click to apply</span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-1.5 max-h-36 overflow-y-auto pr-1 scrollbar-thin">
+                          {CURATED_IMAGE_PRESETS.map((preset) => {
+                            const isSelected = field.value === preset.url;
+                            return (
+                              <button
+                                key={preset.id}
+                                type="button"
+                                onClick={() => field.onChange(preset.url)}
+                                className={`group relative overflow-hidden rounded-lg border text-left transition-all ${
+                                  isSelected
+                                    ? "border-teal-500 ring-2 ring-teal-500/30"
+                                    : "border-neutral-200 bg-white hover:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-900"
+                                }`}
+                              >
+                                <div className="relative h-10 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+                                  <img
+                                    src={preset.url}
+                                    alt={preset.label}
+                                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                                  <span className="absolute bottom-0.5 left-1 right-1 truncate text-[9px] font-bold text-white">
+                                    {preset.label}
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
 
+              {/* Field 3: Category Description */}
               <FormField
                 control={editForm.control}
                 name="description"
@@ -738,7 +1214,11 @@ export default function AdminCategoriesPage() {
                   <FormItem>
                     <FormLabel>Category Description</FormLabel>
                     <FormControl>
-                      <Textarea rows={3} {...field} />
+                      <Textarea
+                        placeholder="Brief description of this category..."
+                        rows={3}
+                        {...field}
+                      />
                     </FormControl>
                     <div className="flex justify-between text-[11px] text-neutral-400">
                       <span>Minimum 5 characters</span>
@@ -756,9 +1236,9 @@ export default function AdminCategoriesPage() {
                 <Button
                   type="submit"
                   className="bg-teal-600 hover:bg-teal-700 text-white"
-                  disabled={updateMutation.isPending}
+                  disabled={isUpdating}
                 >
-                  {updateMutation.isPending ? (
+                  {isUpdating ? (
                     <>
                       <Loader2 className="size-4 animate-spin mr-2" /> Saving...
                     </>
@@ -780,7 +1260,7 @@ export default function AdminCategoriesPage() {
         description={`Are you sure you want to delete the "${deletingCategory?.name}" category? Services under this category may need reassigning.`}
         confirmLabel="Delete Category"
         variant="destructive"
-        isLoading={deleteMutation.isPending}
+        isLoading={isDeleting}
         onConfirm={handleDelete}
       />
     </div>
