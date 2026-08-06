@@ -11,7 +11,6 @@ import {
   Plus,
   Edit2,
   Trash2,
-  Eye,
   RotateCw,
   Copy,
   Check,
@@ -64,10 +63,7 @@ import {
 } from "@/components/ui/form";
 import { DataTable, type ColumnDef } from "@/components/shared/data-table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import {
-  useCategories,
-  useCategoryDetail,
-} from "@/hooks";
+import { useCategories } from "@/hooks";
 import createCategoryAction, {
   updateCategoryAction,
   deleteCategoryAction,
@@ -153,187 +149,11 @@ const ICON_PRESETS = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Category Detail Modal (Fetches single category via router.get('/get-category/:categoryId'))
-// ─────────────────────────────────────────────────────────────────────────────
-function CategoryDetailDialog({
-  categoryId,
-  open,
-  onOpenChange,
-  onEdit,
-}: {
-  categoryId: string | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onEdit: (category: Category) => void;
-}) {
-  const [copied, setCopied] = useState(false);
-  const { data: detailRes, isLoading, isError, refetch } = useCategoryDetail(categoryId ?? "");
-
-  const category = detailRes?.data;
-
-  const handleCopyId = () => {
-    if (category?.id) {
-      void navigator.clipboard.writeText(category.id);
-      setCopied(true);
-      toast.success("Category ID copied to clipboard");
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[540px]">
-        <DialogHeader>
-          <div className="flex items-center justify-between pr-6">
-            <div className="flex items-center gap-2 text-teal-600 dark:text-teal-400">
-              <FolderTree className="size-5" />
-              <DialogTitle className="text-lg font-bold">Category Details</DialogTitle>
-            </div>
-            {category && (
-              <Badge variant="outline" className="font-mono text-xs">
-                {category.slug || "category"}
-              </Badge>
-            )}
-          </div>
-          <DialogDescription>
-            Live category record fetched via backend endpoint <code className="font-mono text-[11px] text-teal-600 dark:text-teal-400">/get-category/:categoryId</code>
-          </DialogDescription>
-        </DialogHeader>
-
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-10 gap-3">
-            <Loader2 className="size-8 animate-spin text-teal-600" />
-            <p className="text-xs text-neutral-500">Loading category specifications...</p>
-          </div>
-        ) : isError || !category ? (
-          <div className="rounded-lg border border-red-200 bg-red-50/50 p-4 text-center dark:border-red-900/40 dark:bg-red-950/20">
-            <p className="text-sm font-medium text-red-700 dark:text-red-300">
-              Failed to load category details.
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-3 gap-1.5"
-              onClick={() => void refetch()}
-            >
-              <RotateCw className="size-3.5" /> Try Again
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4 pt-2">
-            {/* Main Header Preview with Cover Image & Icon */}
-            <div className="overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900/50">
-              {category.image || (category.icon && category.icon.startsWith("http")) ? (
-                <div className="relative h-28 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
-                  <img
-                    src={category.image || category.icon}
-                    alt={category.name}
-                    className="h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                </div>
-              ) : null}
-              <div className="p-4 flex items-start gap-3.5">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 font-bold text-base shadow-sm">
-                  {category.icon && !category.icon.startsWith("http") ? (
-                    category.icon.slice(0, 2).toUpperCase()
-                  ) : (
-                    <FolderTree className="size-5" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-neutral-900 dark:text-white text-base">
-                    {category.name}
-                  </h3>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 line-clamp-2 leading-relaxed">
-                    {category.description || "No description provided."}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Specification Grid */}
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="rounded-lg border border-neutral-100 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-950">
-                <span className="text-neutral-400 text-[11px] block">Category ID</span>
-                <div className="mt-1 flex items-center justify-between font-mono font-medium text-neutral-800 dark:text-neutral-200 truncate">
-                  <span className="truncate">{category.id}</span>
-                  <button
-                    onClick={handleCopyId}
-                    className="ml-1 p-1 hover:text-teal-600 transition-colors"
-                    title="Copy ID"
-                  >
-                    {copied ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-neutral-100 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-950">
-                <span className="text-neutral-400 text-[11px] block">Public URL Slug</span>
-                <div className="mt-1 font-mono font-medium text-neutral-800 dark:text-neutral-200 truncate">
-                  /{category.slug || category.name.toLowerCase().replace(/\s+/g, "-")}
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-neutral-100 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-950">
-                <span className="text-neutral-400 text-[11px] block">Services Listed</span>
-                <div className="mt-1 flex items-center gap-1.5 font-semibold text-neutral-900 dark:text-white">
-                  <Layers className="size-3.5 text-teal-600" />
-                  <span>{category.serviceCount ?? 0} active services</span>
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-neutral-100 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-950">
-                <span className="text-neutral-400 text-[11px] block">Created Date</span>
-                <div className="mt-1 flex items-center gap-1.5 font-medium text-neutral-700 dark:text-neutral-300">
-                  <Calendar className="size-3.5 text-blue-500" />
-                  <span>{formatDate(category.createdAt)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Public Link Preview */}
-            <div className="flex items-center justify-between rounded-lg border border-teal-100 bg-teal-50/50 px-3.5 py-2.5 dark:border-teal-900/30 dark:bg-teal-950/20">
-              <span className="text-xs text-teal-800 dark:text-teal-300">
-                View category on public marketplace
-              </span>
-              <Button asChild variant="ghost" size="sm" className="h-7 gap-1 text-xs text-teal-700 hover:text-teal-900 dark:text-teal-300">
-                <Link href={`/services?category=${category.slug || category.id}`} target="_blank">
-                  Explore <ExternalLink className="size-3" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <DialogFooter className="pt-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
-          {category && (
-            <Button
-              onClick={() => {
-                onOpenChange(false);
-                onEdit(category);
-              }}
-              className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
-            >
-              <Edit2 className="size-3.5" /> Edit Category
-            </Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Main Page Component
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AdminCategoriesPage() {
   const [search, setSearch] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [viewingCategoryId, setViewingCategoryId] = useState<string | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
 
@@ -497,7 +317,7 @@ export default function AdminCategoriesPage() {
             )}
             <div className="min-w-0">
               <button
-                onClick={() => setViewingCategoryId(cat.id)}
+                onClick={() => handleOpenEdit(cat)}
                 className="text-left font-semibold text-neutral-900 hover:text-teal-600 dark:text-white dark:hover:text-teal-400 text-sm transition-colors truncate block"
               >
                 {cat.name}
@@ -545,16 +365,7 @@ export default function AdminCategoriesPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="size-8 text-neutral-500 hover:text-teal-600 dark:hover:text-teal-400"
-            title="View Details"
-            onClick={() => setViewingCategoryId(cat.id)}
-          >
-            <Eye className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8 text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
+            className="size-8 rounded-lg text-neutral-500 hover:text-teal-600 hover:bg-teal-50 dark:hover:text-teal-400 dark:hover:bg-teal-950/50"
             title="Edit Category"
             onClick={() => handleOpenEdit(cat)}
           >
@@ -563,11 +374,22 @@ export default function AdminCategoriesPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="size-8 text-red-500 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950"
+            className="size-8 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/50"
             title="Delete Category"
             onClick={() => setDeletingCategory(cat)}
           >
             <Trash2 className="size-4" />
+          </Button>
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="size-8 rounded-lg text-teal-600 hover:text-teal-800 hover:bg-teal-50 dark:hover:bg-teal-950/50"
+            title="Open in Marketplace"
+          >
+            <Link href={`/services?category=${cat.slug || cat.id}`} target="_blank">
+              <ExternalLink className="size-4" />
+            </Link>
           </Button>
         </div>
       ),
@@ -730,14 +552,20 @@ export default function AdminCategoriesPage() {
               {Array.from({ length: 8 }).map((_, idx) => (
                 <div
                   key={idx}
-                  className="animate-pulse overflow-hidden rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
+                  className="animate-pulse overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xs dark:border-neutral-800 dark:bg-neutral-900"
                 >
-                  <div className="h-32 w-full rounded-xl bg-neutral-200 dark:bg-neutral-800" />
-                  <div className="mt-4 h-5 w-3/4 rounded bg-neutral-200 dark:bg-neutral-800" />
-                  <div className="mt-2 h-4 w-full rounded bg-neutral-200 dark:bg-neutral-800" />
-                  <div className="mt-4 flex items-center justify-between pt-2 border-t border-neutral-100 dark:border-neutral-800">
-                    <div className="h-4 w-1/3 rounded bg-neutral-200 dark:bg-neutral-800" />
-                    <div className="h-6 w-16 rounded bg-neutral-200 dark:bg-neutral-800" />
+                  <div className="h-44 w-full bg-neutral-200 dark:bg-neutral-800" />
+                  <div className="p-4 space-y-3">
+                    <div className="h-5 w-3/4 rounded-md bg-neutral-200 dark:bg-neutral-800" />
+                    <div className="h-3.5 w-full rounded bg-neutral-200 dark:bg-neutral-800" />
+                    <div className="h-3.5 w-2/3 rounded bg-neutral-200 dark:bg-neutral-800" />
+                    <div className="mt-4 flex items-center justify-between pt-3 border-t border-neutral-100 dark:border-neutral-800">
+                      <div className="h-3.5 w-20 rounded bg-neutral-200 dark:bg-neutral-800" />
+                      <div className="flex gap-1.5">
+                        <div className="size-7 rounded-lg bg-neutral-200 dark:bg-neutral-800" />
+                        <div className="size-7 rounded-lg bg-neutral-200 dark:bg-neutral-800" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -772,7 +600,7 @@ export default function AdminCategoriesPage() {
               </div>
             </div>
           ) : (
-            /* Category Card Grid */
+            /* Aesthetic Category Card Grid */
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredAndSortedCategories.map((category) => {
                 const imageUrl =
@@ -782,38 +610,38 @@ export default function AdminCategoriesPage() {
                 return (
                   <Card
                     key={category.id}
-                    className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-neutral-200/80 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-teal-500/50 hover:shadow-lg dark:border-neutral-800 dark:bg-neutral-900"
+                    className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:border-teal-500/40 hover:shadow-xl hover:shadow-teal-500/10 dark:border-neutral-800/80 dark:bg-neutral-900"
                   >
                     <div>
-                      {/* Card Header Media */}
-                      <div className="relative h-36 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+                      {/* Media Header with Smooth Zoom & Dark Glass Badges */}
+                      <div className="relative h-44 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
                         {imageUrl ? (
                           <img
                             src={imageUrl}
                             alt={category.name}
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-teal-500/10 via-teal-600/20 to-teal-800/30">
                             <FolderTree className="size-12 text-teal-600/40" />
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/5" />
 
                         {/* Top Badges */}
-                        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between">
-                          <Badge className="bg-black/60 backdrop-blur-md text-white border-white/20 text-[10px] font-semibold px-2 py-0.5 shadow-sm">
+                        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+                          <Badge className="bg-black/60 backdrop-blur-md text-white border-white/15 text-[10px] font-semibold px-2.5 py-0.5 shadow-sm">
                             <Layers className="size-3 mr-1 text-teal-400 inline" />
                             {category.serviceCount ?? 0} Services
                           </Badge>
-                          <Badge variant="outline" className="bg-white/80 backdrop-blur-md text-neutral-800 border-white/40 text-[10px] font-mono px-1.5 py-0.5 dark:bg-black/80 dark:text-neutral-200">
-                            /{category.slug || "service"}
+                          <Badge variant="outline" className="bg-white/90 backdrop-blur-md text-neutral-800 border-0 text-[10px] font-mono px-2 py-0.5 dark:bg-neutral-950/80 dark:text-neutral-200 shadow-sm">
+                            /{category.slug || "category"}
                           </Badge>
                         </div>
 
-                        {/* Bottom Floating Icon Badge */}
-                        <div className="absolute bottom-2.5 left-3 flex items-center gap-2">
-                          <div className="flex size-9 items-center justify-center rounded-xl bg-white/95 text-teal-700 shadow-md backdrop-blur-md dark:bg-neutral-900/95 dark:text-teal-300 font-bold text-xs">
+                        {/* Overlapping Bottom Floating Icon Badge */}
+                        <div className="absolute -bottom-4 left-4 flex size-11 items-center justify-center rounded-2xl bg-white dark:bg-neutral-900 p-1 shadow-lg ring-4 ring-white dark:ring-neutral-900 transition-transform duration-300 group-hover:scale-110">
+                          <div className="flex size-full items-center justify-center rounded-xl bg-gradient-to-br from-teal-500/15 to-teal-700/25 text-teal-700 dark:text-teal-300 font-bold text-xs shadow-xs">
                             {category.icon && !category.icon.startsWith("http") ? (
                               category.icon.slice(0, 2).toUpperCase()
                             ) : (
@@ -824,16 +652,15 @@ export default function AdminCategoriesPage() {
                       </div>
 
                       {/* Card Content Body */}
-                      <div className="p-4 space-y-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <button
-                            onClick={() => setViewingCategoryId(category.id)}
-                            className="text-left font-bold text-neutral-900 hover:text-teal-600 dark:text-white dark:hover:text-teal-400 text-base transition-colors line-clamp-1 group-hover:text-teal-600 dark:group-hover:text-teal-400"
-                            title={category.name}
-                          >
-                            {category.name}
-                          </button>
-                        </div>
+                      <div className="pt-6 p-4 space-y-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(category)}
+                          className="w-full text-left font-bold text-neutral-900 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 text-base transition-colors line-clamp-1 group-hover:text-teal-600 dark:group-hover:text-teal-400"
+                          title={`Edit ${category.name}`}
+                        >
+                          {category.name}
+                        </button>
 
                         <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2 leading-relaxed min-h-[32px]">
                           {category.description || "No description provided for this category."}
@@ -844,26 +671,17 @@ export default function AdminCategoriesPage() {
                     {/* Card Footer Actions & Date */}
                     <div className="p-4 pt-0">
                       <div className="flex items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800/80">
-                        <div className="flex items-center gap-1 text-[11px] text-neutral-400">
+                        <div className="flex items-center gap-1.5 text-[11px] font-medium text-neutral-400">
                           <Calendar className="size-3 text-neutral-400" />
                           <span>{formatDate(category.createdAt)}</span>
                         </div>
 
-                        {/* Action Buttons */}
+                        {/* Action Buttons (Edit, Delete, Marketplace Link - No Eye Button) */}
                         <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="size-7.5 text-neutral-500 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-950/50"
-                            title="View Details"
-                            onClick={() => setViewingCategoryId(category.id)}
-                          >
-                            <Eye className="size-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-7.5 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 dark:hover:text-white dark:hover:bg-neutral-800"
+                            className="size-7.5 rounded-lg text-neutral-500 hover:text-teal-600 hover:bg-teal-50 dark:hover:text-teal-400 dark:hover:bg-teal-950/50 transition-colors"
                             title="Edit Category"
                             onClick={() => handleOpenEdit(category)}
                           >
@@ -872,7 +690,7 @@ export default function AdminCategoriesPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="size-7.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50"
+                            className="size-7.5 rounded-lg text-neutral-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-950/50 transition-colors"
                             title="Delete Category"
                             onClick={() => setDeletingCategory(category)}
                           >
@@ -882,8 +700,8 @@ export default function AdminCategoriesPage() {
                             asChild
                             variant="ghost"
                             size="icon"
-                            className="size-7.5 text-teal-600 hover:text-teal-800 hover:bg-teal-50 dark:hover:bg-teal-950/50"
-                            title="Open in Marketplace"
+                            className="size-7.5 rounded-lg text-teal-600 hover:text-teal-800 hover:bg-teal-50 dark:text-teal-400 dark:hover:bg-teal-950/50 transition-colors"
+                            title="View in Marketplace"
                           >
                             <Link href={`/services?category=${category.slug || category.id}`} target="_blank">
                               <ExternalLink className="size-3.5" />
@@ -909,14 +727,6 @@ export default function AdminCategoriesPage() {
           emptyDescription="Create your first category to start organizing platform services."
         />
       )}
-
-      {/* View Category Detail Dialog (Fetches via /get-category/:categoryId) */}
-      <CategoryDetailDialog
-        categoryId={viewingCategoryId}
-        open={!!viewingCategoryId}
-        onOpenChange={(open) => !open && setViewingCategoryId(null)}
-        onEdit={(cat) => handleOpenEdit(cat)}
-      />
 
       {/* Create Category Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
