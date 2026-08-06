@@ -299,7 +299,8 @@ export interface DashboardStats {
 
 export interface UserFilters {
   search?: string;
-  role?: UserRole;
+  role?: UserRole | string;
+  status?: UserStatus | string;
   isBanned?: boolean;
   page?: number;
   limit?: number;

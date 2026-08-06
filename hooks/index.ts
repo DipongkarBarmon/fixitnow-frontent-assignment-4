@@ -61,6 +61,8 @@ export {
 export {
   useAdminStats,
   useAdminUsers,
+  useAdminUserDetail,
+  useUpdateUserStatus,
   useBanUser,
   useUnbanUser,
   useDeleteUser,
