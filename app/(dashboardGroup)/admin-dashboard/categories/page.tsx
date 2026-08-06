@@ -21,6 +21,14 @@ import {
   ExternalLink,
   Loader2,
   Info,
+  Wrench,
+  Zap,
+  Droplet,
+  Hammer,
+  Paintbrush,
+  Flame,
+  Tv,
+  Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,6 +52,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { DataTable, type ColumnDef } from "@/components/shared/data-table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -55,15 +64,20 @@ import {
   useDeleteCategory,
 } from "@/hooks";
 import { formatDate } from "@/utils/format";
+import { categorySchema, type CategoryFormValues } from "@/lib/validations";
 import type { Category } from "@/types";
 
-const categorySchema = z.object({
-  name: z.string().min(2, "Category name must be at least 2 characters"),
-  description: z.string().min(5, "Description must be at least 5 characters").optional().or(z.literal("")),
-  icon: z.string().optional(),
-});
-
-type CategoryFormValues = z.infer<typeof categorySchema>;
+const ICON_PRESETS = [
+  { label: "Repair", value: "Wrench", icon: Wrench },
+  { label: "Electrical", value: "Zap", icon: Zap },
+  { label: "Plumbing", value: "Droplet", icon: Droplet },
+  { label: "Cleaning", value: "Sparkles", icon: Sparkles },
+  { label: "Carpentry", value: "Hammer", icon: Hammer },
+  { label: "Painting", value: "Paintbrush", icon: Paintbrush },
+  { label: "HVAC", value: "Flame", icon: Flame },
+  { label: "Electronics", value: "Tv", icon: Tv },
+  { label: "Security", value: "Shield", icon: Shield },
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Category Detail Modal (Fetches single category via router.get('/get-category/:categoryId'))
@@ -536,11 +550,14 @@ export default function AdminCategoriesPage() {
 
       {/* Create Category Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Add New Category</DialogTitle>
+            <div className="flex items-center gap-2 text-teal-600 dark:text-teal-400">
+              <FolderPlus className="size-5" />
+              <DialogTitle>Add New Category</DialogTitle>
+            </div>
             <DialogDescription>
-              Create a new category for services on the FixItNow platform.
+              Create a new category for services on the FixItNow platform (calls <code className="font-mono text-[11px] text-teal-600 dark:text-teal-400">POST /api/category/create-category</code>).
             </DialogDescription>
           </DialogHeader>
 
@@ -551,7 +568,7 @@ export default function AdminCategoriesPage() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category Name</FormLabel>
+                    <FormLabel>Category Name *</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g. Electrical & Wiring" {...field} />
                     </FormControl>
@@ -565,10 +582,36 @@ export default function AdminCategoriesPage() {
                 name="icon"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Icon / Tag (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Zap, Wrench, Shield" {...field} />
-                    </FormControl>
+                    <FormLabel>Category Icon</FormLabel>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {ICON_PRESETS.map((preset) => {
+                        const IconComp = preset.icon;
+                        const isSelected = field.value === preset.value;
+                        return (
+                          <button
+                            key={preset.value}
+                            type="button"
+                            onClick={() => createForm.setValue("icon", preset.value)}
+                            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${
+                              isSelected
+                                ? "border-teal-500 bg-teal-50 text-teal-700 shadow-sm dark:border-teal-500 dark:bg-teal-950/60 dark:text-teal-300"
+                                : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                            }`}
+                          >
+                            <IconComp className="size-3.5" />
+                            <span>{preset.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-1.5">
+                      <Input
+                        placeholder="Or type custom icon name (e.g. Bolt, Shield)"
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        className="text-xs"
+                      />
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -579,7 +622,7 @@ export default function AdminCategoriesPage() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>Category Description *</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Brief summary of services included in this category..."
@@ -587,6 +630,10 @@ export default function AdminCategoriesPage() {
                         {...field}
                       />
                     </FormControl>
+                    <div className="flex justify-between text-[11px] text-neutral-400">
+                      <span>Minimum 5 characters</span>
+                      <span>{field.value?.length || 0}/500</span>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -617,11 +664,14 @@ export default function AdminCategoriesPage() {
 
       {/* Edit Category Dialog */}
       <Dialog open={!!editingCategory} onOpenChange={(open) => !open && setEditingCategory(null)}>
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Edit Category</DialogTitle>
+            <div className="flex items-center gap-2 text-teal-600 dark:text-teal-400">
+              <Edit2 className="size-5" />
+              <DialogTitle>Edit Category</DialogTitle>
+            </div>
             <DialogDescription>
-              Update category details for {editingCategory?.name}
+              Update details for &quot;{editingCategory?.name}&quot; (calls <code className="font-mono text-[11px] text-teal-600 dark:text-teal-400">PUT /api/category/update-category/:categoryId</code>).
             </DialogDescription>
           </DialogHeader>
 
@@ -632,7 +682,7 @@ export default function AdminCategoriesPage() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category Name</FormLabel>
+                    <FormLabel>Category Name *</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -646,10 +696,36 @@ export default function AdminCategoriesPage() {
                 name="icon"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Icon / Tag</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                    <FormLabel>Category Icon</FormLabel>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {ICON_PRESETS.map((preset) => {
+                        const IconComp = preset.icon;
+                        const isSelected = field.value === preset.value;
+                        return (
+                          <button
+                            key={preset.value}
+                            type="button"
+                            onClick={() => editForm.setValue("icon", preset.value)}
+                            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${
+                              isSelected
+                                ? "border-teal-500 bg-teal-50 text-teal-700 shadow-sm dark:border-teal-500 dark:bg-teal-950/60 dark:text-teal-300"
+                                : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                            }`}
+                          >
+                            <IconComp className="size-3.5" />
+                            <span>{preset.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-1.5">
+                      <Input
+                        placeholder="Or type custom icon name (e.g. Bolt, Shield)"
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        className="text-xs"
+                      />
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -660,10 +736,14 @@ export default function AdminCategoriesPage() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>Category Description</FormLabel>
                     <FormControl>
                       <Textarea rows={3} {...field} />
                     </FormControl>
+                    <div className="flex justify-between text-[11px] text-neutral-400">
+                      <span>Minimum 5 characters</span>
+                      <span>{field.value?.length || 0}/500</span>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}

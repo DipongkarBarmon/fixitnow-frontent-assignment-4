@@ -80,6 +80,8 @@ export interface CategoryMutationInput {
   name: string;
   icon?: string;
   description?: string;
+  image?: string;
+  slug?: string;
 }
 
 export function useCreateCategory() {
@@ -115,5 +117,6 @@ export function useDeleteCategory() {
     },
   });
 }
+
 
 

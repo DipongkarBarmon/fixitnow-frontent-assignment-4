@@ -198,3 +198,29 @@ export const technicianFilterSchema = z.object({
 });
 
 export type TechnicianFilterValues = z.infer<typeof technicianFilterSchema>;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Category Schemas
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const categorySchema = z.object({
+  name: z
+    .string()
+    .min(2, "Category name must be at least 2 characters")
+    .max(60, "Category name is too long"),
+  icon: z.string().optional(),
+  description: z
+    .string()
+    .min(5, "Description must be at least 5 characters")
+    .max(500, "Description is too long")
+    .optional()
+    .or(z.literal("")),
+  slug: z.string().optional(),
+  image: z.string().url("Please enter a valid image URL").optional().or(z.literal("")),
+});
+
+export const categoryFormSchema = categorySchema;
+
+export type CategoryFormValues = z.infer<typeof categorySchema>;
+export type CategoryFormInput = CategoryFormValues;
+
