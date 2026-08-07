@@ -29,6 +29,7 @@ export {
   useTechnicianDetail,
   useMyTechnicianProfile,
   useTopRatedTechnicians,
+  useCreateTechnicianProfile,
   useUpdateTechnicianProfile,
 } from "./use-technicians";
 

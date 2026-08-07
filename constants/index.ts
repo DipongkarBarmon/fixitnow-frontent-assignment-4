@@ -30,9 +30,13 @@ export const API_ROUTES = {
     FEATURED: "/api/services/featured",
   },
   TECHNICIANS: {
-    LIST: "/api/technicians",
-    DETAIL: (id: string) => `/api/technicians/${id}`,
-    PROFILE: "/api/technicians/profile",
+    CREATE_PROFILE: "/api/technician/create-technician-profile",
+    ME: "/api/technician/get-own-technician-profile",
+    PROFILE: "/api/technician/get-own-technician-profile",
+    LIST: "/api/technician/get-all-technician-profile",
+    DETAIL: (id: string) => `/api/technician/get-technician-profile/${id}`,
+    UPDATE: (id: string) => `/api/technician/update-technician-profile/${id}`,
+    DELETE: (id: string) => `/api/technician/delete-technician-profile/${id}`,
     TOP_RATED: "/api/technicians/top-rated",
   },
   AVAILABILITY: {

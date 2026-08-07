@@ -15,7 +15,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { BookingStatusBadge } from "@/components/shared/booking-status-badge";
 import { PaymentStatusBadge } from "@/components/shared/payment-status-badge";
 import { useBookingDetail, useCancelBooking, useInitiatePayment, useCreateReview } from "@/hooks";
-import { formatDate, formatCurrency, formatRelativeTime, getAvatarUrl } from "@/utils/format";
+import { formatDate, formatCurrency, formatRelativeTime, formatRating, getAvatarUrl } from "@/utils/format";
 import type { PaymentMethod } from "@/types";
 
 const PAYMENT_METHODS: { method: PaymentMethod; label: string; logo: string; description: string }[] = [
@@ -162,7 +162,7 @@ export default function BookingDetailPage() {
                   )}
                   <div className="mt-1 flex items-center gap-1 text-sm text-amber-600">
                     <Star className="size-3.5 fill-amber-400 text-amber-400" />
-                    {booking.technician?.averageRating.toFixed(1)} ({booking.technician?.totalReviews} reviews)
+                    {formatRating(booking.technician?.averageRating)} ({booking.technician?.totalReviews ?? 0} reviews)
                   </div>
                 </div>
               </div>

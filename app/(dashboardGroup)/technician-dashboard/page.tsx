@@ -22,7 +22,7 @@ import { StatCard } from "@/components/cards/stat-card";
 import { BookingStatusBadge } from "@/components/shared/booking-status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { StatCardSkeleton, CardSkeleton } from "@/components/shared/loading";
-import { formatCurrency, formatDate } from "@/utils/format";
+import { formatCurrency, formatDate, formatRating } from "@/utils/format";
 import { useAuth } from "@/providers/auth-provider";
 import {
   useBookings,
@@ -52,7 +52,7 @@ export default function TechnicianDashboard() {
 
   const totalEarnings = completedBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
   const monthlyEarnings = totalEarnings > 0 ? totalEarnings : (profile?.hourlyRate ? profile.hourlyRate * 20 : 15000);
-  const avgRating = profile?.averageRating ?? 4.8;
+  const avgRating = Number(profile?.averageRating || 4.8);
   const totalCompleted = profile?.completedJobs ?? completedBookings.length;
 
   const handleStatusChange = async (bookingId: string, status: "ACCEPTED" | "DECLINED" | "IN_PROGRESS" | "COMPLETED") => {
@@ -143,7 +143,7 @@ export default function TechnicianDashboard() {
           <StatCard
             icon={Star}
             label="Customer Rating"
-            value={avgRating.toFixed(1)}
+            value={formatRating(avgRating)}
             iconColor="text-purple-600"
             iconBg="bg-purple-100 dark:bg-purple-900/30"
           />

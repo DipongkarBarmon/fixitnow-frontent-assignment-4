@@ -37,10 +37,12 @@ export function formatRelativeTime(dateStr?: string | null): string {
 }
 
 /**
- * Format a rating number
+ * Format a rating number or string safely
  */
-export function formatRating(rating: number): string {
-  return rating.toFixed(1);
+export function formatRating(rating?: number | string | null): string {
+  if (rating === undefined || rating === null || rating === "") return "5.0";
+  const num = Number(rating);
+  return isNaN(num) ? "5.0" : num.toFixed(1);
 }
 
 /**
@@ -83,7 +85,38 @@ export function buildQueryString(
  * Generate a placeholder avatar URL
  */
 export function getAvatarUrl(name: string): string {
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name || "User")}`;
+}
+
+/**
+ * Safely get a valid image URL for avatars, prioritizing profile photo
+ */
+export function getSafeAvatarUrl(photoUrl?: string | null, name = "User"): string {
+  if (!photoUrl || typeof photoUrl !== "string") {
+    return getAvatarUrl(name);
+  }
+  const trimmed = photoUrl.trim();
+  if (
+    !trimmed ||
+    trimmed === "undefined" ||
+    trimmed === "null" ||
+    trimmed === "default" ||
+    trimmed === "[object Object]"
+  ) {
+    return getAvatarUrl(name);
+  }
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    try {
+      new URL(trimmed);
+      return trimmed;
+    } catch {
+      return getAvatarUrl(name);
+    }
+  }
+  if (trimmed.startsWith("/")) {
+    return trimmed;
+  }
+  return `/${trimmed}`;
 }
 
 /**

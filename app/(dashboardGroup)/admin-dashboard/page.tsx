@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { BookingStatusBadge } from "@/components/shared/booking-status-badge";
 import { PaymentStatusBadge } from "@/components/shared/payment-status-badge";
 import { StatCardSkeleton, CardSkeleton } from "@/components/shared/loading";
-import { formatCurrency, formatDate } from "@/utils/format";
+import { formatCurrency, formatDate, formatRating } from "@/utils/format";
 import { useAdminStats, useBookings } from "@/hooks";
 import type { Booking } from "@/types";
 
@@ -41,7 +41,7 @@ export default function AdminDashboard() {
   const totalBookings = stats?.totalBookings ?? 8320;
   const totalRevenue = stats?.totalRevenue ?? 1250000;
   const activeServices = stats?.totalServices ?? 48;
-  const avgRating = stats?.averageRating ?? 4.8;
+  const avgRating = Number(stats?.averageRating || 4.8);
   const pendingBookings = stats?.pendingBookings ?? 14;
 
   const isLoading = statsLoading || bookingsLoading;
@@ -159,7 +159,7 @@ export default function AdminDashboard() {
         <StatCard
           icon={Star}
           label="Average Platform Rating"
-          value={avgRating.toFixed(1)}
+          value={formatRating(avgRating)}
           iconColor="text-amber-500"
           iconBg="bg-amber-100 dark:bg-amber-900/30"
         />

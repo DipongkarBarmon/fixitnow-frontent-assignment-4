@@ -100,6 +100,8 @@ export interface TechnicianProfile {
   userId: string;
   user?: User;
   bio?: string;
+  address?: string;
+  location?: string;
   skills: string[];
   experience: number;
   certifications: string[];
@@ -109,12 +111,34 @@ export interface TechnicianProfile {
   averageRating: number;
   totalReviews: number;
   isVerified: boolean;
-  location?: string;
   latitude?: number;
   longitude?: number;
+  availabilities?: Availability[];
+  bookings?: Booking[];
+  reviews?: Review[];
   services?: Service[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CreateTechnicianProfileInput {
+  address: string;
+  bio?: string;
+  skills: string[];
+  experience?: number;
+  hourlyRate?: number;
+  certifications?: string[];
+  location?: string;
+}
+
+export interface UpdateTechnicianProfileInput {
+  address?: string;
+  bio?: string;
+  skills?: string[];
+  experience?: number;
+  hourlyRate?: number;
+  certifications?: string[];
+  location?: string;
 }
 
 export interface TechnicianFilters {
@@ -247,19 +271,22 @@ export interface PaymentFilters {
 // ==========================================
 
 export interface Review {
-  id: string;
-  bookingId: string;
+  id?: string;
+  bookingId?: string;
   booking?: Booking;
-  customerId: string;
+  customerId?: string;
   customer?: User;
-  technicianId: string;
+  technicianId?: string;
   technician?: TechnicianProfile;
-  serviceId: string;
-  service?: Service;
+  serviceId?: string;
+  service?: Service | string;
+  customerName?: string;
+  avatar?: string;
+  date?: string;
   rating: number;
   comment: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateReviewInput {

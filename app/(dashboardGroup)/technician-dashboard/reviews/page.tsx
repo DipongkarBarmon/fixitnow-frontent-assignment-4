@@ -12,7 +12,7 @@ import { StarRating } from "@/components/shared/star-rating";
 import { EmptyState } from "@/components/shared/empty-state";
 import { CardSkeleton } from "@/components/shared/loading";
 import { useReviews, useMyTechnicianProfile } from "@/hooks";
-import { formatDate, getAvatarUrl, getInitials } from "@/utils/format";
+import { formatDate, formatRating, getAvatarUrl, getInitials } from "@/utils/format";
 import type { Review } from "@/types";
 
 export default function TechnicianReviewsPage() {
@@ -29,8 +29,8 @@ export default function TechnicianReviewsPage() {
 
   const reviews: Review[] = reviewsRes?.data ?? [];
   const profile = profileRes?.data;
-  const avgRating = profile?.averageRating || 4.8;
-  const totalReviews = profile?.totalReviews || (reviews.length > 0 ? reviews.length : 12);
+  const avgRating = Number(profile?.averageRating || 4.8);
+  const totalReviews = Number(profile?.totalReviews ?? (reviews.length > 0 ? reviews.length : 12));
 
   // Rating breakdown stats
   const ratingDistribution = [
@@ -59,7 +59,7 @@ export default function TechnicianReviewsPage() {
             {/* Left: Overall Score */}
             <div className="flex flex-col items-center justify-center border-b border-neutral-100 pb-6 text-center md:border-b-0 md:border-r md:pb-0 dark:border-neutral-800">
               <span className="text-5xl font-black text-neutral-900 dark:text-white">
-                {avgRating.toFixed(1)}
+                {formatRating(avgRating)}
               </span>
               <div className="my-2">
                 <StarRating rating={avgRating} size="lg" />
@@ -148,7 +148,7 @@ export default function TechnicianReviewsPage() {
                         {r.customer?.name || "Verified Customer"}
                       </h4>
                       <p className="text-xs text-neutral-500">
-                        Service: {r.service?.name || "Home Service"} • {formatDate(r.createdAt)}
+                        Service: {typeof r.service === "object" ? r.service?.name : (r.service || "Home Service")} • {formatDate(r.createdAt || new Date().toISOString())}
                       </p>
                     </div>
                   </div>

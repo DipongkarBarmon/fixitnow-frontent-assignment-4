@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/utils/format";
+import { formatCurrency, formatRating } from "@/utils/format";
 import type { Service } from "@/types";
 
 interface ServiceCardProps {
@@ -58,7 +58,7 @@ export function ServiceCard({ service, className }: ServiceCardProps) {
           <div className="flex items-center gap-1">
             <Star className="size-4 fill-amber-400 text-amber-400" />
             <span className="font-medium text-neutral-700 dark:text-neutral-300">
-              {service.averageRating.toFixed(1)}
+              {formatRating(service.averageRating)}
             </span>
             <span>({service.totalReviews})</span>
           </div>

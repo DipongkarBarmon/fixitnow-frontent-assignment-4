@@ -19,6 +19,9 @@ import {
   TechnicianCardSkeleton,
 } from "@/components/cards/technician-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { useQuery } from "@tanstack/react-query";
+import { getAllTechnicianProfilesAction } from "@/app/(dashboardGroup)/technician-dashboard/_actions/technicianAction";
+import { QUERY_KEYS } from "@/constants";
 import type { TechnicianProfile } from "@/types";
 
 // ─── Demo data ────────────────────────────────────────────────────────────────
@@ -175,13 +178,41 @@ function FilterPanel({
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 export function TechniciansPageClient() {
   const [search, setSearch] = useState("");
   const [selectedSkill, setSelectedSkill] = useState("");
   const [minRating, setMinRating] = useState(0);
   const [sortBy, setSortBy] = useState<SortOption>("rating");
-  const [isLoading] = useState(false);
+
+  const { data: queryData, isLoading } = useQuery({
+    queryKey: QUERY_KEYS.TECHNICIANS.ALL,
+    queryFn: async () => {
+      try {
+        const res = await getAllTechnicianProfilesAction();
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          return res.data;
+        }
+      } catch (err) {
+        console.warn("[TechniciansPageClient] Action fetch failed:", err);
+      }
+      return demoTechnicians;
+    },
+  });
+
+  const allTechnicians: TechnicianProfile[] = useMemo(() => {
+    if (queryData && Array.isArray(queryData) && queryData.length > 0) {
+      // Merge unique by ID
+      const map = new Map<string, TechnicianProfile>();
+      queryData.forEach((t) => map.set(t.id || t.userId, t));
+      demoTechnicians.forEach((t) => {
+        if (!map.has(t.id || t.userId)) {
+          map.set(t.id || t.userId, t);
+        }
+      });
+      return Array.from(map.values());
+    }
+    return demoTechnicians;
+  }, [queryData]);
 
   const handleReset = () => {
     setSearch("");
@@ -191,10 +222,11 @@ export function TechniciansPageClient() {
   };
 
   const filteredTechnicians = useMemo(() => {
-    let list = demoTechnicians.filter((t) => {
+    let list = allTechnicians.filter((t) => {
       const name = t.user?.name?.toLowerCase() ?? "";
-      const skillsText = t.skills.join(" ").toLowerCase();
-      const location = (t.location ?? "").toLowerCase();
+      const skillsArray = Array.isArray(t.skills) ? t.skills : [];
+      const skillsText = skillsArray.join(" ").toLowerCase();
+      const location = (t.address || t.location || "").toLowerCase();
       const query = search.toLowerCase();
 
       const matchesSearch =
@@ -205,35 +237,45 @@ export function TechniciansPageClient() {
 
       const matchesSkill =
         !selectedSkill ||
-        t.skills.some((s) =>
+        skillsArray.some((s) =>
           s.toLowerCase().includes(selectedSkill.toLowerCase())
         );
 
-      const matchesRating = t.averageRating >= minRating;
+      const rating = Number(t.averageRating || 5.0);
+      const matchesRating = rating >= minRating;
 
       return matchesSearch && matchesSkill && matchesRating;
     });
 
     // Sort
     list = [...list].sort((a, b) => {
+      const aRating = Number(a.averageRating || 5.0);
+      const bRating = Number(b.averageRating || 5.0);
+      const aRate = Number(a.hourlyRate || 500);
+      const bRate = Number(b.hourlyRate || 500);
+      const aJobs = Number(a.completedJobs || 0);
+      const bJobs = Number(b.completedJobs || 0);
+      const aExp = Number(a.experience || 3);
+      const bExp = Number(b.experience || 3);
+
       switch (sortBy) {
         case "rating":
-          return b.averageRating - a.averageRating;
+          return bRating - aRating;
         case "price_asc":
-          return a.hourlyRate - b.hourlyRate;
+          return aRate - bRate;
         case "price_desc":
-          return b.hourlyRate - a.hourlyRate;
+          return bRate - aRate;
         case "jobs":
-          return b.completedJobs - a.completedJobs;
+          return bJobs - aJobs;
         case "experience":
-          return b.experience - a.experience;
+          return bExp - aExp;
         default:
           return 0;
       }
     });
 
     return list;
-  }, [search, selectedSkill, minRating, sortBy]);
+  }, [allTechnicians, search, selectedSkill, minRating, sortBy]);
 
   const activeFilterCount =
     (selectedSkill ? 1 : 0) + (minRating > 0 ? 1 : 0);

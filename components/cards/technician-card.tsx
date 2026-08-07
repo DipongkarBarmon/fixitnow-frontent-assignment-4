@@ -1,14 +1,14 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { MapPin, Briefcase, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { StarRating } from "@/components/shared/star-rating";
 import { cn } from "@/lib/utils";
-import { formatCurrency, getAvatarUrl } from "@/utils/format";
+import { formatCurrency, getSafeAvatarUrl, getInitials } from "@/utils/format";
 import type { TechnicianProfile } from "@/types";
 
 interface TechnicianCardProps {
@@ -18,7 +18,23 @@ interface TechnicianCardProps {
 
 export function TechnicianCard({ technician, className }: TechnicianCardProps) {
   const name = technician.user?.name || "Technician";
-  const avatar = technician.user?.avatar || getAvatarUrl(name);
+  const rawPhoto =
+    technician.user?.profilePhoto ||
+    technician.user?.avatar ||
+    (technician as any).profilePhoto ||
+    (technician as any).avatar;
+  const avatar = getSafeAvatarUrl(rawPhoto, name);
+  const rating = Number(technician.averageRating || 5.0);
+  const totalReviews = Number(technician.totalReviews ?? technician.reviews?.length ?? 0);
+  const location = technician.address || technician.location || "Dhaka, Bangladesh";
+  const skills = Array.isArray(technician.skills) && technician.skills.length > 0
+    ? technician.skills
+    : ["General Maintenance"];
+  const experience = Number(technician.experience || 3);
+  const completedJobs = Number(technician.completedJobs || 0);
+  const hourlyRate = Number(technician.hourlyRate || 500);
+  const isVerified = Boolean(technician.isVerified || technician.user?.isVerified);
+  const profileId = technician.id || technician.userId;
 
   return (
     <div
@@ -29,15 +45,14 @@ export function TechnicianCard({ technician, className }: TechnicianCardProps) {
     >
       {/* Top Section */}
       <div className="flex items-start gap-4">
-        <div className="relative">
-          <Image
-            src={avatar}
-            alt={name}
-            width={64}
-            height={64}
-            className="size-16 rounded-full border-2 border-neutral-200 object-cover dark:border-neutral-700"
-          />
-          {technician.isVerified && (
+        <div className="relative shrink-0">
+          <Avatar className="size-16 rounded-full border-2 border-neutral-200 object-cover dark:border-neutral-700">
+            <AvatarImage src={avatar} alt={name} className="object-cover" />
+            <AvatarFallback className="font-semibold text-neutral-700 dark:text-neutral-300">
+              {getInitials(name)}
+            </AvatarFallback>
+          </Avatar>
+          {isVerified && (
             <CheckCircle2 className="absolute -bottom-0.5 -right-0.5 size-5 fill-blue-500 text-white" />
           )}
         </div>
@@ -48,15 +63,15 @@ export function TechnicianCard({ technician, className }: TechnicianCardProps) {
             </h3>
           </div>
           <div className="flex items-center gap-1 mt-0.5">
-            <StarRating rating={technician.averageRating} size="sm" />
+            <StarRating rating={rating} size="sm" />
             <span className="text-xs text-neutral-500 dark:text-neutral-400">
-              ({technician.totalReviews})
+              ({totalReviews})
             </span>
           </div>
-          {technician.location && (
+          {location && (
             <div className="flex items-center gap-1 mt-1 text-xs text-neutral-500 dark:text-neutral-400">
               <MapPin className="size-3" />
-              <span className="truncate">{technician.location}</span>
+              <span className="truncate">{location}</span>
             </div>
           )}
         </div>
@@ -64,7 +79,7 @@ export function TechnicianCard({ technician, className }: TechnicianCardProps) {
 
       {/* Skills */}
       <div className="mt-4 flex flex-wrap gap-1.5">
-        {technician.skills.slice(0, 3).map((skill) => (
+        {skills.slice(0, 3).map((skill) => (
           <Badge
             key={skill}
             variant="secondary"
@@ -73,9 +88,9 @@ export function TechnicianCard({ technician, className }: TechnicianCardProps) {
             {skill}
           </Badge>
         ))}
-        {technician.skills.length > 3 && (
+        {skills.length > 3 && (
           <Badge variant="outline" className="text-xs font-normal">
-            +{technician.skills.length - 3}
+            +{skills.length - 3}
           </Badge>
         )}
       </div>
@@ -84,10 +99,10 @@ export function TechnicianCard({ technician, className }: TechnicianCardProps) {
       <div className="mt-4 flex items-center gap-4 text-sm text-neutral-500 dark:text-neutral-400">
         <div className="flex items-center gap-1">
           <Briefcase className="size-3.5" />
-          <span>{technician.experience} yrs</span>
+          <span>{experience} yrs</span>
         </div>
         <span>•</span>
-        <span>{technician.completedJobs} jobs</span>
+        <span>{completedJobs} jobs</span>
       </div>
 
       {/* Bottom */}
@@ -97,12 +112,12 @@ export function TechnicianCard({ technician, className }: TechnicianCardProps) {
             From
           </span>
           <p className="text-lg font-bold text-neutral-900 dark:text-white">
-            {formatCurrency(technician.hourlyRate)}
+            {formatCurrency(hourlyRate)}
             <span className="text-xs font-normal text-neutral-500">/hr</span>
           </p>
         </div>
         <Button asChild size="sm" variant="outline">
-          <Link href={`/technicians/${technician.id}`}>View Profile</Link>
+          <Link href={`/technicians/${profileId}`}>View Profile</Link>
         </Button>
       </div>
     </div>

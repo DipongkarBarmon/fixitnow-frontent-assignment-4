@@ -17,11 +17,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Container } from "@/components/shared/container";
 import { StarRating } from "@/components/shared/star-rating";
-import { formatCurrency, getInitials } from "@/utils/format";
+import { formatCurrency, getAvatarUrl, getSafeAvatarUrl, getInitials } from "@/utils/format";
 import type { TechnicianProfile } from "@/types";
+import {
+  getTechnicianProfileByIdAction,
+  getAllTechnicianProfilesAction,
+} from "@/app/(dashboardGroup)/technician-dashboard/_actions/technicianAction";
 
-// Demo data — will be replaced by API calls
-const demoTechnicians: Record<string, TechnicianProfile & { bio: string; reviews: { customerName: string; avatar: string; rating: number; comment: string; date: string; service: string }[] }> = {
+// Demo data fallback if no live data is found
+const demoTechnicians: Record<string, any> = {
   "1": {
     id: "1", userId: "u1",
     user: { id: "u1", name: "Karim Ahmed", email: "karim@example.com", role: "TECHNICIAN", isVerified: true, isBanned: false, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Karim", createdAt: "", updatedAt: "" },
@@ -47,10 +51,36 @@ const demoTechnicians: Record<string, TechnicianProfile & { bio: string; reviews
   },
 };
 
+async function getTechnicianData(id: string): Promise<any> {
+  try {
+    const res = await getTechnicianProfileByIdAction(id);
+    if (res.success && res.data) {
+      return res.data;
+    }
+  } catch (err) {
+    console.warn("[getTechnicianData] Direct ID fetch failed:", err);
+  }
+
+  // Search all technicians if direct id lookup didn't find (e.g. userId vs profile id)
+  try {
+    const allRes = await getAllTechnicianProfilesAction();
+    if (allRes.success && Array.isArray(allRes.data)) {
+      const match = allRes.data.find(
+        (t) => t.id === id || t.userId === id || (t.user && t.user.id === id)
+      );
+      if (match) return match;
+    }
+  } catch (err) {
+    console.warn("[getTechnicianData] List search failed:", err);
+  }
+
+  return demoTechnicians[id] || demoTechnicians["1"];
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const tech = demoTechnicians[id];
-  const name = tech?.user?.name ?? "Technician";
+  const tech = await getTechnicianData(id);
+  const name = tech?.user?.name ?? "Technician Specialist";
   return {
     title: `${name} — FixItNow Technician`,
     description: tech?.bio?.slice(0, 160) ?? "View technician profile on FixItNow.",
@@ -59,9 +89,27 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function TechnicianDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const technician = demoTechnicians[id] ?? demoTechnicians["1"]; // fallback for demo
-  const name = technician.user?.name ?? "Technician";
-  const avatar = technician.user?.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
+  const technician = await getTechnicianData(id);
+  const name = technician.user?.name ?? "Technician Specialist";
+  const rawPhoto =
+    technician.user?.profilePhoto ||
+    technician.user?.avatar ||
+    (technician as any).profilePhoto ||
+    (technician as any).avatar;
+  const avatar = getSafeAvatarUrl(rawPhoto, name);
+  const location = technician.address || technician.location || "Dhaka, Bangladesh";
+  const experience = technician.experience || 3;
+  const hourlyRate = technician.hourlyRate || 500;
+  const completedJobs = Number(technician.completedJobs || 0);
+  const averageRating = Number(technician.averageRating || 5.0);
+  const isVerified = Boolean(technician.isVerified || technician.user?.isVerified);
+  const skills: string[] = Array.isArray(technician.skills) && technician.skills.length > 0
+    ? technician.skills
+    : ["Maintenance & Repair", "Diagnostics"];
+  const certifications: string[] = Array.isArray(technician.certifications) ? technician.certifications : [];
+  const reviews: any[] = Array.isArray(technician.reviews) ? technician.reviews : [];
+  const totalReviews = Number(technician.totalReviews ?? reviews.length ?? 0);
+  const bio = technician.bio || "Professional technician providing high-quality repair and maintenance services on FixItNow.";
 
   const timeSlots = ["9:00 AM", "11:00 AM", "1:00 PM", "3:00 PM", "5:00 PM"];
 
@@ -89,39 +137,39 @@ export default async function TechnicianDetailPage({ params }: { params: Promise
                       <AvatarImage src={avatar} alt={name} />
                       <AvatarFallback className="text-2xl">{getInitials(name)}</AvatarFallback>
                     </Avatar>
-                    {technician.isVerified && (
+                    {isVerified && (
                       <CheckCircle2 className="absolute -bottom-1 -right-1 size-7 fill-blue-500 text-white" />
                     )}
                   </div>
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-3">
                       <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">{name}</h1>
-                      {technician.isVerified && (
+                      {isVerified && (
                         <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
                           ✓ Verified
                         </Badge>
                       )}
                     </div>
                     <div className="mt-1 flex items-center gap-2">
-                      <StarRating rating={technician.averageRating} size="sm" />
+                      <StarRating rating={averageRating} size="sm" />
                       <span className="text-sm text-neutral-500">
-                        {technician.averageRating.toFixed(1)} ({technician.totalReviews} reviews)
+                        {averageRating.toFixed(1)} ({totalReviews} {totalReviews === 1 ? "review" : "reviews"})
                       </span>
                     </div>
-                    {technician.location && (
+                    {location && (
                       <div className="mt-2 flex items-center gap-1.5 text-sm text-neutral-500 dark:text-neutral-400">
                         <MapPin className="size-4" />
-                        {technician.location}
+                        {location}
                       </div>
                     )}
                     <div className="mt-3 flex flex-wrap gap-4 text-sm text-neutral-600 dark:text-neutral-400">
                       <span className="flex items-center gap-1.5">
                         <Briefcase className="size-4" />
-                        {technician.experience} years experience
+                        {experience} {experience === 1 ? "year" : "years"} experience
                       </span>
                       <span className="flex items-center gap-1.5">
                         <CheckCircle2 className="size-4 text-emerald-500" />
-                        {technician.completedJobs} jobs completed
+                        {completedJobs} jobs completed
                       </span>
                     </div>
                   </div>
@@ -136,7 +184,7 @@ export default async function TechnicianDetailPage({ params }: { params: Promise
               </CardHeader>
               <CardContent>
                 <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
-                  {technician.bio}
+                  {bio}
                 </p>
               </CardContent>
             </Card>
@@ -148,7 +196,7 @@ export default async function TechnicianDetailPage({ params }: { params: Promise
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {technician.skills.map((skill) => (
+                  {skills.map((skill) => (
                     <Badge key={skill} variant="secondary" className="text-sm">
                       {skill}
                     </Badge>
@@ -158,14 +206,14 @@ export default async function TechnicianDetailPage({ params }: { params: Promise
             </Card>
 
             {/* Certifications */}
-            {technician.certifications && technician.certifications.length > 0 && (
+            {certifications.length > 0 && (
               <Card className="border-neutral-200 dark:border-neutral-800">
                 <CardHeader>
                   <CardTitle>Certifications</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
-                    {technician.certifications.map((cert) => (
+                    {certifications.map((cert) => (
                       <li key={cert} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
                         <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
                         {cert}
@@ -181,29 +229,41 @@ export default async function TechnicianDetailPage({ params }: { params: Promise
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MessageSquare className="size-5" />
-                  Customer Reviews ({technician.reviews.length})
+                  Customer Reviews ({reviews.length})
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
-                {technician.reviews.map((review, i) => (
-                  <div key={i} className="relative rounded-xl border border-neutral-100 bg-neutral-50 p-5 dark:border-neutral-800 dark:bg-neutral-900/50">
-                    <Quote className="absolute right-4 top-4 size-6 text-neutral-200 dark:text-neutral-700" />
-                    <div className="mb-3 flex items-center gap-3">
-                      <Avatar className="size-8">
-                        <AvatarImage src={review.avatar} alt={review.customerName} />
-                        <AvatarFallback className="text-xs">{getInitials(review.customerName)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-sm font-semibold text-neutral-900 dark:text-white">{review.customerName}</p>
-                        <p className="text-xs text-neutral-500">{review.service} · {new Date(review.date).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}</p>
+                {reviews.length > 0 ? (
+                  reviews.map((review, i) => (
+                    <div key={i} className="relative rounded-xl border border-neutral-100 bg-neutral-50 p-5 dark:border-neutral-800 dark:bg-neutral-900/50">
+                      <Quote className="absolute right-4 top-4 size-6 text-neutral-200 dark:text-neutral-700" />
+                      <div className="mb-3 flex items-center gap-3">
+                        <Avatar className="size-8">
+                          <AvatarImage src={getSafeAvatarUrl(review.avatar || review.customerAvatar || review.profilePhoto, review.customerName || "Customer")} alt={review.customerName || "Customer"} />
+                          <AvatarFallback className="text-xs">{getInitials(review.customerName || "Customer")}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-semibold text-neutral-900 dark:text-white">{review.customerName || "Verified Customer"}</p>
+                          <p className="text-xs text-neutral-500">
+                            {typeof review.service === "object" ? review.service?.name : review.service || "General Service"} · {new Date(review.date || review.createdAt || Date.now()).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
+                          </p>
+                        </div>
+                        <div className="ml-auto">
+                          <StarRating rating={Number(review.rating || 5)} size="sm" />
+                        </div>
                       </div>
-                      <div className="ml-auto">
-                        <StarRating rating={review.rating} size="sm" />
-                      </div>
+                      <p className="text-sm text-neutral-600 dark:text-neutral-400">{review.comment || "Great service delivered on time."}</p>
                     </div>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">{review.comment}</p>
+                  ))
+                ) : (
+                  <div className="py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">
+                    <MessageSquare className="mx-auto mb-2 size-8 text-neutral-300 dark:text-neutral-700" />
+                    <p className="font-medium">No reviews yet</p>
+                    <p className="text-xs text-neutral-400 mt-1">
+                      Be the first customer to book and leave a review for {name}!
+                    </p>
                   </div>
-                ))}
+                )}
               </CardContent>
             </Card>
           </div>
@@ -215,7 +275,7 @@ export default async function TechnicianDetailPage({ params }: { params: Promise
               <CardContent className="p-6">
                 <div className="mb-4 flex items-end gap-1">
                   <span className="text-3xl font-extrabold text-neutral-900 dark:text-white">
-                    {formatCurrency(technician.hourlyRate)}
+                    {formatCurrency(hourlyRate)}
                   </span>
                   <span className="mb-1 text-sm text-neutral-500 dark:text-neutral-400">/hour</span>
                 </div>
@@ -236,7 +296,7 @@ export default async function TechnicianDetailPage({ params }: { params: Promise
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-neutral-500">Jobs done</span>
-                    <span className="font-medium text-neutral-900 dark:text-white">{technician.completedJobs}+</span>
+                    <span className="font-medium text-neutral-900 dark:text-white">{completedJobs}+</span>
                   </div>
                 </div>
 
@@ -256,11 +316,11 @@ export default async function TechnicianDetailPage({ params }: { params: Promise
                   ))}
                 </div>
 
-                <Button asChild size="lg" className="w-full">
-                  <Link href={`/services`}>Book This Technician</Link>
+                <Button asChild size="lg" className="w-full bg-emerald-600 hover:bg-emerald-700 font-semibold text-white">
+                  <Link href="/services">Book This Technician</Link>
                 </Button>
-                <Button variant="outline" size="lg" className="mt-2 w-full">
-                  Message
+                <Button asChild variant="outline" size="lg" className="mt-2 w-full">
+                  <Link href="/contact">Message Technician</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -271,7 +331,7 @@ export default async function TechnicianDetailPage({ params }: { params: Promise
                 <h3 className="mb-4 text-sm font-semibold text-neutral-900 dark:text-white">Performance</h3>
                 <div className="space-y-3">
                   {[
-                    { label: "Avg. Rating", value: `${technician.averageRating} ★`, color: "text-amber-600" },
+                    { label: "Avg. Rating", value: `${averageRating.toFixed(1)} ★`, color: "text-amber-600" },
                     { label: "Completion Rate", value: "98%", color: "text-emerald-600" },
                     { label: "On-Time Rate", value: "95%", color: "text-blue-600" },
                     { label: "Repeat Customers", value: "72%", color: "text-purple-600" },
