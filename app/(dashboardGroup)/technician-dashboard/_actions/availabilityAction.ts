@@ -140,7 +140,7 @@ export async function createAvailabilityAction(
       console.warn("[createAvailabilityAction] revalidatePath warning:", err);
     }
   }
-
+   console.log("[createAvailabilityAction]", result);
   return result;
 }
 
