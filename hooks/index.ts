@@ -12,6 +12,7 @@ export {
   useServiceDetail,
   useFeaturedServices,
   useCreateService,
+  useTechnicianCreateService,
   useUpdateService,
   useDeleteService,
 } from "./use-services";

@@ -64,7 +64,7 @@ export interface Category {
 export interface Service {
   id: string;
   name: string;
-  slug: string;
+  slug?: string;
   description: string;
   image?: string;
   images?: string[];
@@ -72,12 +72,14 @@ export interface Service {
   category?: Category;
   startingPrice: number;
   averageRating: number;
-  totalReviews: number;
-  technicianCount: number;
+  totalReviews?: number;
+  technicianCount?: number;
   duration?: number;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  certificates?: string[];
+  experienceYears?: number;
 }
 
 export interface ServiceFilters {

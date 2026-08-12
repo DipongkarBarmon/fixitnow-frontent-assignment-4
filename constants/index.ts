@@ -38,6 +38,7 @@ export const API_ROUTES = {
     UPDATE: (id: string) => `/api/technician/update-technician-profile/${id}`,
     DELETE: (id: string) => `/api/technician/delete-technician-profile/${id}`,
     TOP_RATED: "/api/technicians/top-rated",
+    CREATE_SERVICE: "/api/technician/create-service",
   },
   AVAILABILITY: {
     GET: (technicianId: string) => `/api/availability/${technicianId}`,

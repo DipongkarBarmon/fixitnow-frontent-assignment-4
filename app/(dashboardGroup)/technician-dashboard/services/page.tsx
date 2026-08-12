@@ -50,41 +50,32 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { CardSkeleton } from "@/components/shared/loading";
-import {
-  useServices,
-  useCategories,
-  useCreateService,
-  useUpdateService,
-  useDeleteService,
-} from "@/hooks";
+import { useCategories, useServices } from "@/hooks";
 import { formatCurrency } from "@/utils/format";
 import type { Service } from "@/types";
-
-const serviceSchema = z.object({
-  name: z.string().min(2, "Service name must be at least 2 characters"),
-  categoryId: z.string().min(1, "Please select a category"),
-  startingPrice: z.number().min(50, "Price must be at least 50 BDT"),
-  duration: z.number().min(15, "Duration must be at least 15 minutes"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
-});
-
-type ServiceFormValues = {
-  name: string;
-  categoryId: string;
-  startingPrice: number;
-  duration: number;
-  description: string;
-};
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { CreateServiceForm } from "../_components/create-service-form";
+import { EditServiceForm } from "../_components/edit-service-form";
+import { deleteServiceAction, getTechnicianServicesAction } from "../_actions/serviceAction";
+import { QUERY_KEYS } from "@/constants";
 
 export default function TechnicianServicesPage() {
-  const { data: servicesRes, isLoading: servicesLoading } = useServices({ limit: 50 });
+  const { data: servicesRes, isLoading: servicesLoading } = useQuery({
+    queryKey: ["getTechnicianServicesAction"],
+    queryFn: () => getTechnicianServicesAction(),
+  });
   const { data: categoriesRes } = useCategories();
+  const queryClient = useQueryClient();
 
-  const createMutation = useCreateService();
-  const updateMutation = useUpdateService("");
-  const deleteMutation = useDeleteService();
+  let services: Service[] = [];
+  if (Array.isArray(servicesRes?.data)) {
+    services = servicesRes.data;
+  } else if (servicesRes?.data && Array.isArray((servicesRes.data as any).data)) {
+    services = (servicesRes.data as any).data;
+  } else if (Array.isArray(servicesRes)) {
+    services = servicesRes as unknown as Service[];
+  }
 
-  const services: Service[] = servicesRes?.data ?? [];
   const categories = categoriesRes?.data ?? [];
 
   const [search, setSearch] = useState("");
@@ -94,92 +85,36 @@ export default function TechnicianServicesPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [deletingServiceId, setDeletingServiceId] = useState<string | null>(null);
-
-  // Forms
-  const createForm = useForm<ServiceFormValues>({
-    resolver: zodResolver(serviceSchema),
-    defaultValues: {
-      name: "",
-      categoryId: "",
-      startingPrice: 500,
-      duration: 60,
-      description: "",
-    },
-  });
-
-  const editForm = useForm<ServiceFormValues>({
-    resolver: zodResolver(serviceSchema),
-    defaultValues: {
-      name: "",
-      categoryId: "",
-      startingPrice: 500,
-      duration: 60,
-      description: "",
-    },
-  });
-
-  const handleOpenEdit = (service: Service) => {
-    setEditingService(service);
-    editForm.reset({
-      name: service.name,
-      categoryId: service.categoryId,
-      startingPrice: service.startingPrice,
-      duration: service.duration || 60,
-      description: service.description || "",
-    });
-  };
-
-  const handleCreateSubmit = async (values: ServiceFormValues) => {
-    try {
-      await createMutation.mutateAsync({
-        name: values.name,
-        categoryId: values.categoryId,
-        startingPrice: values.startingPrice,
-        duration: values.duration,
-        description: values.description,
-      });
-      toast.success("Service added successfully!");
-      setIsCreateOpen(false);
-      createForm.reset();
-    } catch {
-      toast.error("Failed to create service. Please try again.");
-    }
-  };
-
-  const handleEditSubmit = async (values: ServiceFormValues) => {
-    if (!editingService) return;
-    try {
-      await updateMutation.mutateAsync({
-        name: values.name,
-        categoryId: values.categoryId,
-        startingPrice: values.startingPrice,
-        duration: values.duration,
-        description: values.description,
-      });
-      toast.success("Service updated successfully!");
-      setEditingService(null);
-    } catch {
-      toast.error("Failed to update service.");
-    }
-  };
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
     if (!deletingServiceId) return;
+    setIsDeleting(true);
     try {
-      await deleteMutation.mutateAsync(deletingServiceId);
-      toast.success("Service deleted successfully");
-      setDeletingServiceId(null);
+      const result = await deleteServiceAction(deletingServiceId);
+      if (result.success) {
+        toast.success("Service deleted successfully");
+        setDeletingServiceId(null);
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.SERVICES.ALL });
+        void queryClient.invalidateQueries({ queryKey: ["getTechnicianServicesAction"] });
+      } else {
+        toast.error(result.message || "Failed to delete service");
+      }
     } catch {
-      toast.error("Failed to delete service.");
+      toast.error("Failed to delete service. Please try again.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   // Filter services
   const filteredServices = services.filter((s) => {
+    // Backend may return `title` and `price` instead of `name` and `startingPrice`
+    const serviceName = (s as any).title || s.name || "";
     const matchesSearch =
       !search ||
-      s.name.toLowerCase().includes(search.toLowerCase()) ||
-      s.description.toLowerCase().includes(search.toLowerCase());
+      serviceName.toLowerCase().includes(search.toLowerCase()) ||
+      (s.description || "").toLowerCase().includes(search.toLowerCase());
     const matchesCategory =
       categoryFilter === "ALL" || s.categoryId === categoryFilter;
     return matchesSearch && matchesCategory;
@@ -260,7 +195,7 @@ export default function TechnicianServicesPage() {
                       {service.category?.name || "General Service"}
                     </Badge>
                     <CardTitle className="text-lg font-bold text-neutral-900 dark:text-white">
-                      {service.name}
+                      {(service as any).title || service.name || "Unnamed Service"}
                     </CardTitle>
                   </div>
                   <div className="flex items-center gap-1">
@@ -268,7 +203,7 @@ export default function TechnicianServicesPage() {
                       variant="ghost"
                       size="icon"
                       className="size-8 text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
-                      onClick={() => handleOpenEdit(service)}
+                      onClick={() => setEditingService(service)}
                     >
                       <Edit2 className="size-4" />
                     </Button>
@@ -296,7 +231,7 @@ export default function TechnicianServicesPage() {
                   <div className="text-right">
                     <span className="text-xs text-neutral-400">Starting at</span>
                     <p className="text-lg font-bold text-neutral-900 dark:text-white">
-                      {formatCurrency(service.startingPrice)}
+                      {formatCurrency((service as any).price || service.startingPrice || 0)}
                     </p>
                   </div>
                 </div>
@@ -307,276 +242,18 @@ export default function TechnicianServicesPage() {
       )}
 
       {/* Add Service Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Add New Service</DialogTitle>
-            <DialogDescription>
-              Provide details and pricing for the service you want to offer.
-            </DialogDescription>
-          </DialogHeader>
-
-          <Form {...createForm}>
-            <form onSubmit={createForm.handleSubmit(handleCreateSubmit)} className="space-y-4">
-              <FormField
-                control={createForm.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Service Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Master Bathroom Pipe Repair" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={createForm.control}
-                name="categoryId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a service category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={createForm.control}
-                  name="startingPrice"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Starting Price (৳)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="50"
-                          placeholder="500"
-                          value={field.value ?? ""}
-                          onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={createForm.control}
-                  name="duration"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Est. Duration (mins)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="15"
-                          placeholder="60"
-                          value={field.value ?? ""}
-                          onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={createForm.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Detailed breakdown of what is included in this service..."
-                        rows={3}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <DialogFooter className="pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsCreateOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  disabled={createMutation.isPending}
-                >
-                  {createMutation.isPending ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin mr-2" />
-                      Creating...
-                    </>
-                  ) : (
-                    "Create Service"
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      <CreateServiceForm
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        categories={categories}
+      />
 
       {/* Edit Service Dialog */}
-      <Dialog open={!!editingService} onOpenChange={(open) => !open && setEditingService(null)}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Edit Service</DialogTitle>
-            <DialogDescription>
-              Update pricing or service details for {editingService?.name}.
-            </DialogDescription>
-          </DialogHeader>
-
-          <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit(handleEditSubmit)} className="space-y-4">
-              <FormField
-                control={editForm.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Service Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={editForm.control}
-                name="categoryId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={editForm.control}
-                  name="startingPrice"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Starting Price (৳)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="50"
-                          value={field.value ?? ""}
-                          onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={editForm.control}
-                  name="duration"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Est. Duration (mins)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="15"
-                          value={field.value ?? ""}
-                          onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={editForm.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea rows={3} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <DialogFooter className="pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setEditingService(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  disabled={updateMutation.isPending}
-                >
-                  {updateMutation.isPending ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin mr-2" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Changes"
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      <EditServiceForm
+        service={editingService}
+        onClose={() => setEditingService(null)}
+        categories={categories}
+      />
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
@@ -586,7 +263,7 @@ export default function TechnicianServicesPage() {
         description="Are you sure you want to remove this service? Existing completed bookings will not be affected."
         confirmLabel="Delete Service"
         variant="destructive"
-        isLoading={deleteMutation.isPending}
+        isLoading={isDeleting}
         onConfirm={handleDelete}
       />
     </div>

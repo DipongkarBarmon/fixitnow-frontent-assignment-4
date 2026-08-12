@@ -13,24 +13,17 @@ import { ServiceCard, ServiceCardSkeleton } from "@/components/cards/service-car
 import { EmptyState } from "@/components/shared/empty-state";
 import type { Service } from "@/types";
 
-// Demo data - will be replaced with API calls
-const allServices: Service[] = [
-  { id: "1", name: "Complete Plumbing Repair", slug: "plumbing", description: "Expert plumbing repair for pipes, faucets, and drains.", image: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600", categoryId: "1", category: { id: "1", name: "Plumbing", slug: "plumbing", createdAt: "", updatedAt: "" }, startingPrice: 500, averageRating: 4.8, totalReviews: 234, technicianCount: 45, isActive: true, createdAt: "", updatedAt: "" },
-  { id: "2", name: "Electrical Installation", slug: "electrical", description: "Professional electrical wiring and fixture installation.", image: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600", categoryId: "2", category: { id: "2", name: "Electrical", slug: "electrical", createdAt: "", updatedAt: "" }, startingPrice: 800, averageRating: 4.9, totalReviews: 189, technicianCount: 38, isActive: true, createdAt: "", updatedAt: "" },
-  { id: "3", name: "Deep House Cleaning", slug: "cleaning", description: "Thorough home cleaning service.", image: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600", categoryId: "3", category: { id: "3", name: "Cleaning", slug: "cleaning", createdAt: "", updatedAt: "" }, startingPrice: 1200, averageRating: 4.7, totalReviews: 312, technicianCount: 62, isActive: true, createdAt: "", updatedAt: "" },
-  { id: "4", name: "AC Maintenance", slug: "ac", description: "Complete AC service and maintenance.", image: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=600", categoryId: "4", category: { id: "4", name: "AC & HVAC", slug: "hvac", createdAt: "", updatedAt: "" }, startingPrice: 1500, averageRating: 4.6, totalReviews: 156, technicianCount: 28, isActive: true, createdAt: "", updatedAt: "" },
-  { id: "5", name: "Interior Painting", slug: "painting", description: "Professional painting for walls and ceilings.", image: "https://images.unsplash.com/photo-1562259929-b4e1fd3aef09?w=600", categoryId: "5", category: { id: "5", name: "Painting", slug: "painting", createdAt: "", updatedAt: "" }, startingPrice: 2000, averageRating: 4.5, totalReviews: 98, technicianCount: 22, isActive: true, createdAt: "", updatedAt: "" },
-  { id: "6", name: "Furniture Assembly", slug: "furniture", description: "Expert furniture assembly and repair.", image: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600", categoryId: "6", category: { id: "6", name: "Carpentry", slug: "carpentry", createdAt: "", updatedAt: "" }, startingPrice: 700, averageRating: 4.8, totalReviews: 143, technicianCount: 19, isActive: true, createdAt: "", updatedAt: "" },
-];
-
-const categories = ["All", "Plumbing", "Electrical", "Cleaning", "AC & HVAC", "Painting", "Carpentry"];
+interface ServicesPageClientProps {
+  initialServices: Service[];
+}
 
 interface FilterPanelProps {
   category: string;
+  categories: string[];
   onCategoryChange: (cat: string) => void;
 }
 
-function FilterPanel({ category, onCategoryChange }: FilterPanelProps) {
+function FilterPanel({ category, categories, onCategoryChange }: FilterPanelProps) {
   return (
     <div className="space-y-6">
       <div>
@@ -52,15 +45,18 @@ function FilterPanel({ category, onCategoryChange }: FilterPanelProps) {
   );
 }
 
-export function ServicesPageClient() {
+export function ServicesPageClient({ initialServices }: ServicesPageClientProps) {
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [category, setCategory] = useState("All");
   const [sortBy, setSortBy] = useState("popular");
   const [isLoading] = useState(false);
 
-  const filteredServices = allServices.filter((s) => {
-    const matchesSearch = !search || s.name.toLowerCase().includes(search.toLowerCase());
+  const categories = ["All", ...Array.from(new Set(initialServices.map((s) => s.category?.name).filter(Boolean)))];
+
+  const filteredServices = initialServices.filter((s) => {
+    const serviceName = (s as any).title || s.name || "";
+    const matchesSearch = !search || serviceName.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = category === "All" || s.category?.name === category;
     return matchesSearch && matchesCategory;
   });
@@ -114,7 +110,7 @@ export function ServicesPageClient() {
               </SheetTrigger>
               <SheetContent>
                 <SheetTitle>Filters</SheetTitle>
-                <div className="mt-6"><FilterPanel category={category} onCategoryChange={setCategory} /></div>
+                <div className="mt-6"><FilterPanel category={category} categories={categories as string[]} onCategoryChange={setCategory} /></div>
               </SheetContent>
             </Sheet>
           </div>
@@ -125,7 +121,7 @@ export function ServicesPageClient() {
           <aside className="hidden w-64 shrink-0 sm:block">
             <div className="sticky top-24 rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
               <h2 className="mb-4 text-lg font-semibold text-neutral-900 dark:text-white">Filters</h2>
-              <FilterPanel category={category} onCategoryChange={setCategory} />
+              <FilterPanel category={category} categories={categories as string[]} onCategoryChange={setCategory} />
             </div>
           </aside>
 

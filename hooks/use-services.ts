@@ -65,6 +65,16 @@ export interface CreateServiceInput {
   image?: string;
 }
 
+export interface CreateTechnicianServiceInput {
+  title: string;
+  description: string;
+  categoryId: string;
+  price: number;
+  duration?: number;
+  certificates?: string[];
+  experienceYears?: number;
+}
+
 export interface UpdateServiceInput extends Partial<CreateServiceInput> {
   isActive?: boolean;
 }
@@ -74,6 +84,17 @@ export function useCreateService() {
   return useMutation({
     mutationFn: (data: CreateServiceInput) =>
       apiPost<ApiResponse<Service>>(API_ROUTES.SERVICES.LIST, data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.SERVICES.ALL });
+    },
+  });
+}
+
+export function useTechnicianCreateService() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateTechnicianServiceInput) =>
+      apiPost<ApiResponse<Service>>(API_ROUTES.TECHNICIANS.CREATE_SERVICE, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.SERVICES.ALL });
     },
