@@ -16,6 +16,8 @@ import {
   XCircle,
   Loader2,
   FolderTree,
+  Calendar,
+  ShoppingBag,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,6 +26,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
+import Link from "next/link";
 import {
   Dialog,
   DialogContent,
@@ -191,8 +195,18 @@ export default function TechnicianServicesPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <Badge variant="secondary" className="mb-2 text-xs font-medium">
-                      {service.category?.name || "General Service"}
+                    <Badge variant="secondary" className="mb-2 flex w-fit items-center gap-1.5 text-xs font-medium">
+                      {service.category?.icon && (
+                        <div className="relative size-3.5 overflow-hidden rounded-[2px]">
+                          <Image
+                            src={service.category.icon}
+                            alt={service.category?.name || "Icon"}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      )}
+                      <span>{service.category?.name || "General Service"}</span>
                     </Badge>
                     <CardTitle className="text-lg font-bold text-neutral-900 dark:text-white">
                       {(service as any).title || service.name || "Unnamed Service"}
@@ -222,7 +236,7 @@ export default function TechnicianServicesPage() {
                 </CardDescription>
               </CardHeader>
 
-              <CardContent className="pt-0">
+              <CardContent className="pt-0 pb-4">
                 <div className="mt-2 flex items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800">
                   <div className="flex items-center gap-1.5 text-xs text-neutral-500">
                     <Clock className="size-3.5" />
@@ -234,6 +248,22 @@ export default function TechnicianServicesPage() {
                       {formatCurrency((service as any).price || service.startingPrice || 0)}
                     </p>
                   </div>
+                </div>
+
+                {/* Booking Stats and Actions */}
+                <div className="mt-4 grid grid-cols-2 gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-800">
+                  <Button variant="outline" size="sm" className="w-full text-xs gap-1.5 bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-900 dark:hover:bg-neutral-800" asChild>
+                    <Link href="/technician-dashboard/availability">
+                      <Calendar className="size-3.5" />
+                      Availability
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full text-xs gap-1.5 bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-900 dark:hover:bg-neutral-800" asChild>
+                    <Link href={`/technician-dashboard/bookings?serviceId=${service.id}`}>
+                      <ShoppingBag className="size-3.5" />
+                      Bookings
+                    </Link>
+                  </Button>
                 </div>
               </CardContent>
             </Card>

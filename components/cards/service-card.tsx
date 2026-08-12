@@ -27,7 +27,7 @@ export function ServiceCard({ service, className }: ServiceCardProps) {
       <div className="relative aspect-[16/10] overflow-hidden">
         <Image
           src={service.image || "/placeholder-service.jpg"}
-          alt={service.name}
+          alt={service.name || (service as any).title || "Service"}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -46,7 +46,7 @@ export function ServiceCard({ service, className }: ServiceCardProps) {
       {/* Content */}
       <div className="p-4 space-y-3">
         <h3 className="text-lg font-semibold text-neutral-900 dark:text-white line-clamp-1">
-          {service.name}
+          {service.name || (service as any).title || "Service"}
         </h3>
 
         <p className="text-sm text-neutral-500 dark:text-neutral-400 line-clamp-2">
@@ -75,7 +75,7 @@ export function ServiceCard({ service, className }: ServiceCardProps) {
               Starting from
             </span>
             <p className="text-lg font-bold text-neutral-900 dark:text-white">
-              {formatCurrency(service.startingPrice)}
+              {formatCurrency(service.startingPrice || (service as any).price || 0)}
             </p>
           </div>
           <Button asChild size="sm" className="group/btn">
