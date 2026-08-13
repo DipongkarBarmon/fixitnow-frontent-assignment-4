@@ -11,9 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
-import { useServiceDetail, useTechnicians, useAvailability, useCreateBooking } from "@/hooks";
+import { useServiceDetail, useAvailability, useCreateBooking } from "@/hooks";
 import { formatCurrency } from "@/utils/format";
-import type { TechnicianProfile, TimeSlot } from "@/types";
+import type { TimeSlot } from "@/types";
 
 export default function BookingClient() {
   const searchParams = useSearchParams();
@@ -21,20 +21,17 @@ export default function BookingClient() {
   const serviceId = searchParams.get("serviceId");
 
   const [step, setStep] = useState(1);
-  const [selectedTech, setSelectedTech] = useState<TechnicianProfile | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | null>(null);
   const [notes, setNotes] = useState("");
 
-  const { data: serviceRes, isLoading: serviceLoading } = useServiceDetail(serviceId ?? "");
-  const service = serviceRes?.data;
+  const { data: serviceRes, isLoading: serviceLoading, error: serviceError } = useServiceDetail(serviceId ?? "");
+  const service = serviceRes?.data ?? ((serviceRes as any)?.id ? serviceRes : null);
 
-  // We fetch all technicians and just show a few for the demo if there's no backend filter yet.
-  const { data: techsRes, isLoading: techsLoading } = useTechnicians({ limit: 10 });
-  const technicians = techsRes?.data ?? [];
-
-  const { data: availRes, isLoading: availLoading } = useAvailability(selectedTech?.id ?? "");
-  const availabilityData = availRes?.data ?? [];
+  const technicianId = service?.technicianId || (service as any)?.technician?.id;
+  
+  const { data: availRes, isLoading: availLoading } = useAvailability(technicianId ?? "");
+  const availabilityData = availRes?.data ?? (Array.isArray(availRes) ? availRes : []);
 
   const createBookingMutation = useCreateBooking();
 
@@ -46,15 +43,6 @@ export default function BookingClient() {
     }
   }, [serviceId, router]);
 
-  // If the service has a specific technician, auto-select them (based on backend schema mapping)
-  useEffect(() => {
-    if (service && (service as any).technicianId && technicians.length > 0) {
-      const tech = technicians.find(t => t.id === (service as any).technicianId || t.userId === (service as any).technicianId);
-      if (tech && !selectedTech) {
-        setSelectedTech(tech);
-      }
-    }
-  }, [service, technicians, selectedTech]);
 
   if (serviceLoading) {
     return (
@@ -69,6 +57,10 @@ export default function BookingClient() {
     return (
       <div className="py-20 text-center">
         <p className="text-lg text-neutral-600 dark:text-neutral-400">Service not found.</p>
+        <div className="mt-4 text-left p-4 bg-red-50 text-red-600 rounded-md max-w-xl mx-auto overflow-auto text-xs">
+          <strong>Debug Info:</strong>
+          <pre>{JSON.stringify({ serviceId, serviceRes, serviceError }, null, 2)}</pre>
+        </div>
         <Button className="mt-4" onClick={() => router.push("/services")}>Back to Services</Button>
       </div>
     );
@@ -93,11 +85,7 @@ export default function BookingClient() {
       ];
 
   const handleNextStep = () => {
-    if (step === 2 && !selectedTech) {
-      toast.error("Please select a technician");
-      return;
-    }
-    if (step === 3 && (!selectedDate || !selectedTimeSlot)) {
+    if (step === 2 && (!selectedDate || !selectedTimeSlot)) {
       toast.error("Please select a date and time");
       return;
     }
@@ -105,14 +93,18 @@ export default function BookingClient() {
   };
 
   const handleConfirm = () => {
-    if (!selectedTech || !selectedDate || !selectedTimeSlot || !service) return;
+    if (!technicianId || !selectedDate || !selectedTimeSlot || !service) return;
 
     createBookingMutation.mutate({
       serviceId: service.id,
-      technicianId: selectedTech.id,
+      technicianId: technicianId,
+      availabilityId: dayAvailability?.id || selectedTimeSlot.id,
+      price: service.startingPrice || (service as any).price || 0,
+      
+      // Fallbacks in case the backend also requires these fields
       bookingDate: new Date(selectedDate).toISOString(),
       timeSlotId: selectedTimeSlot.id,
-      timeSlot: `${selectedTimeSlot.startTime} - ${selectedTimeSlot.endTime}`, // Sometimes required
+      timeSlot: `${selectedTimeSlot.startTime} - ${selectedTimeSlot.endTime}`, 
       notes,
     } as any, {
       onSuccess: () => {
@@ -131,9 +123,8 @@ export default function BookingClient() {
       <div className="mb-8 flex items-center justify-between">
         {[
           { num: 1, label: "Service" },
-          { num: 2, label: "Technician" },
-          { num: 3, label: "Schedule" },
-          { num: 4, label: "Confirm" },
+          { num: 2, label: "Schedule" },
+          { num: 3, label: "Confirm" },
         ].map((s, i, arr) => (
           <div key={s.num} className="flex flex-1 items-center">
             <div className={`flex flex-col items-center ${s.num <= step ? "text-blue-600 dark:text-blue-500" : "text-neutral-400"}`}>
@@ -156,14 +147,12 @@ export default function BookingClient() {
           <Card>
             <CardContent className="p-6">
               <div className="flex flex-col gap-6 sm:flex-row">
-                {service.image && (
-                  <div className="relative h-40 w-full shrink-0 overflow-hidden rounded-xl sm:w-40">
-                    <Image src={service.image} alt={service.name || (service as any).title} fill className="object-cover" />
-                  </div>
-                )}
+                <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                  <Clock className="size-8" />
+                </div>
                 <div className="flex-1 space-y-3">
                   <h3 className="text-2xl font-bold text-neutral-900 dark:text-white">{service.name || (service as any).title}</h3>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400">{service.description}</p>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">{service.description || "No description provided for this service."}</p>
                   <div className="flex flex-wrap gap-4 text-sm font-medium text-neutral-900 dark:text-neutral-200">
                     <div className="flex items-center gap-1.5"><Clock className="size-4 text-neutral-500" /> ~{service.duration || 60} mins</div>
                     <div className="font-bold text-blue-600 dark:text-blue-400">Starting at {formatCurrency(service.startingPrice || (service as any).price || 0)}</div>
@@ -173,61 +162,13 @@ export default function BookingClient() {
             </CardContent>
           </Card>
           <div className="flex justify-end">
-            <Button onClick={handleNextStep}>Continue to Technician <ChevronRight className="ml-2 size-4" /></Button>
+            <Button onClick={handleNextStep}>Continue to Schedule <ChevronRight className="ml-2 size-4" /></Button>
           </div>
         </div>
       )}
 
-      {/* Step 2: Choose Technician */}
+      {/* Step 2: Choose Schedule */}
       {step === 2 && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-          <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Select a Technician</h2>
-          {techsLoading ? (
-            <div className="flex justify-center py-10"><Loader2 className="size-8 animate-spin text-neutral-400" /></div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {technicians.length === 0 ? (
-                <div className="col-span-2 text-center text-neutral-500 py-8">No technicians available.</div>
-              ) : (
-                technicians.map(tech => (
-                  <button
-                    key={tech.id}
-                    onClick={() => setSelectedTech(tech)}
-                    className={`flex items-start gap-4 rounded-xl border p-4 text-left transition-all ${
-                      selectedTech?.id === tech.id 
-                        ? "border-blue-600 bg-blue-50 ring-1 ring-blue-600 dark:border-blue-500 dark:bg-blue-900/20" 
-                        : "border-neutral-200 bg-white hover:border-blue-300 dark:border-neutral-800 dark:bg-neutral-950"
-                    }`}
-                  >
-                    <div className="relative size-12 shrink-0 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
-                      {tech.user?.avatar ? (
-                         <Image src={tech.user.avatar} alt={tech.user?.name || "Tech"} fill className="object-cover" />
-                      ) : (
-                         <User className="absolute inset-0 m-auto size-6 text-neutral-400" />
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-neutral-900 dark:text-white">{tech.user?.name || "Technician"}</h4>
-                      <div className="mt-1 flex items-center gap-1 text-xs text-amber-600">
-                        <Star className="size-3.5 fill-amber-400 text-amber-400" />
-                        {tech.averageRating} ({tech.totalReviews} reviews)
-                      </div>
-                      <p className="mt-1 text-xs text-neutral-500 line-clamp-1">{tech.bio}</p>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          )}
-          <div className="flex justify-between">
-            <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
-            <Button onClick={handleNextStep} disabled={!selectedTech}>Choose Schedule <ChevronRight className="ml-2 size-4" /></Button>
-          </div>
-        </div>
-      )}
-
-      {/* Step 3: Choose Schedule */}
-      {step === 3 && (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
           <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Choose Date & Time</h2>
           <div className="grid gap-8 md:grid-cols-2">
@@ -274,14 +215,14 @@ export default function BookingClient() {
             </div>
           </div>
           <div className="flex justify-between">
-            <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
+            <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
             <Button onClick={handleNextStep} disabled={!selectedDate || !selectedTimeSlot}>Review Booking <ChevronRight className="ml-2 size-4" /></Button>
           </div>
         </div>
       )}
 
-      {/* Step 4: Confirm */}
-      {step === 4 && (
+      {/* Step 3: Confirm */}
+      {step === 3 && (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
           <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Review & Confirm</h2>
           <Card>
@@ -294,7 +235,7 @@ export default function BookingClient() {
                 </div>
                 <div>
                   <p className="text-sm text-neutral-500">Technician</p>
-                  <p className="font-semibold text-neutral-900 dark:text-white">{selectedTech?.user?.name || "Technician"}</p>
+                  <p className="font-semibold text-neutral-900 dark:text-white">{service?.technician?.user?.name || "Technician"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-neutral-500">Date & Time</p>
@@ -317,7 +258,7 @@ export default function BookingClient() {
           </Card>
           
           <div className="flex justify-between">
-            <Button variant="outline" onClick={() => setStep(3)}>Back</Button>
+            <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
             <Button 
               className="bg-blue-600 hover:bg-blue-700 text-white" 
               onClick={handleConfirm}

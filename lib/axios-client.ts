@@ -13,7 +13,7 @@ import axios, {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const axiosClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BACKEND_API_URL ?? "http://localhost:5000",
+  baseURL: typeof window !== "undefined" ? "/" : (process.env.NEXT_PUBLIC_BACKEND_API_URL ?? "http://localhost:5000"),
   timeout: 30_000,
   headers: {
     "Content-Type": "application/json",

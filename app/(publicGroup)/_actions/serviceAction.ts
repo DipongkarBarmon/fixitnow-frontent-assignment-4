@@ -17,15 +17,13 @@ export async function getAllServiceAction(): Promise<PublicServiceActionResult<S
   const backendUrl = getBackendUrl();
   const candidatePaths = [
     "/api/service/get-all-service",
-    "/api/services/get-all-service",
-    "/get-all-service",
-    "/api/services",
-  ];
+  ];  
 
   let lastErrorMsg = "Failed to fetch services";
 
   for (const path of candidatePaths) {
-    const targetUrl = `${backendUrl.replace(/\/$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
+    let targetUrl = `${backendUrl.replace(/\/$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
+    targetUrl += targetUrl.includes("?") ? "&limit=1000" : "?limit=1000";
     try {
       const res = await fetch(targetUrl, {
         method: "GET",
@@ -66,9 +64,7 @@ export async function getServiceByIdAction(
   const backendUrl = getBackendUrl();
   const candidatePaths = [
     `/api/service/get-service/${serviceId}`,
-    `/api/services/get-service/${serviceId}`,
-    `/get-service/${serviceId}`,
-    `/api/services/${serviceId}`,
+
   ];
 
   let lastErrorMsg = "Failed to fetch service details";

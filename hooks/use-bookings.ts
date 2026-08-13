@@ -93,7 +93,7 @@ export function useCancelBooking(bookingId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () =>
-      apiDelete<ApiResponse<Booking>>(API_ROUTES.BOOKINGS.CANCEL(bookingId)),
+      apiPost<ApiResponse<Booking>>(API_ROUTES.BOOKINGS.CANCEL(bookingId)),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKINGS.ALL });
       void queryClient.invalidateQueries({

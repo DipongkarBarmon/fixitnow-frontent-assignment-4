@@ -25,9 +25,9 @@ export const API_ROUTES = {
     DETAIL: (id: string) => `/api/category/get-category/${id}`,
   },
   SERVICES: {
-    LIST: "/api/services",
-    DETAIL: (id: string) => `/api/services/${id}`,
-    FEATURED: "/api/services/featured",
+    LIST: "/api/service/get-all-service",
+    DETAIL: (id: string) => `/api/service/get-service/${id}`,
+    FEATURED: "/api/service/get-all-service",
   },
   TECHNICIANS: {
     CREATE_PROFILE: "/api/technician/create-technician-profile",
@@ -46,11 +46,11 @@ export const API_ROUTES = {
     REMOVE: (id: string) => `/api/availability/${id}`,
   },
   BOOKINGS: {
-    LIST: "/api/bookings",
-    CREATE: "/api/bookings",
-    DETAIL: (id: string) => `/api/bookings/${id}`,
-    UPDATE_STATUS: (id: string) => `/api/bookings/${id}/status`,
-    CANCEL: (id: string) => `/api/bookings/${id}/cancel`,
+    LIST: "/api/booking/get-user-booking",
+    CREATE: "/api/booking/create-booking",
+    DETAIL: (id: string) => `/api/booking/get-booking-by-id/${id}`,
+    UPDATE_STATUS: (id: string) => `/api/booking/update-booking-status/${id}`, // Assumed for technician/admin if it exists
+    CANCEL: (id: string) => `/api/booking/cancel-booking/${id}`,
   },
   PAYMENTS: {
     INITIATE: "/api/payments/initiate",
@@ -139,6 +139,7 @@ export const PUBLIC_NAV_ITEMS = [
 
 export const CUSTOMER_SIDEBAR_ITEMS = [
   { title: "Overview", href: "/dashboard", icon: "LayoutDashboard" },
+  { title: "Services", href: "/dashboard/services", icon: "Wrench" },
   { title: "My Bookings", href: "/dashboard/bookings", icon: "Calendar" },
   { title: "Payments", href: "/dashboard/payments", icon: "CreditCard" },
   { title: "Reviews", href: "/dashboard/reviews", icon: "Star" },
@@ -177,6 +178,7 @@ export const BOOKING_STATUS_CONFIG: Record<
   string,
   { label: string; color: string; bgColor: string }
 > = {
+  REQUESTED: { label: "Requested", color: "text-amber-700 dark:text-amber-400", bgColor: "bg-amber-100 dark:bg-amber-900/30" },
   PENDING: { label: "Pending", color: "text-amber-700 dark:text-amber-400", bgColor: "bg-amber-100 dark:bg-amber-900/30" },
   ACCEPTED: { label: "Accepted", color: "text-blue-700 dark:text-blue-400", bgColor: "bg-blue-100 dark:bg-blue-900/30" },
   DECLINED: { label: "Declined", color: "text-red-700 dark:text-red-400", bgColor: "bg-red-100 dark:bg-red-900/30" },

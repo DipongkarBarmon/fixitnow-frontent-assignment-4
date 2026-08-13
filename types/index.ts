@@ -188,6 +188,7 @@ export interface SetAvailabilityInput {
 // ==========================================
 
 export type BookingStatus =
+  | "REQUESTED"
   | "PENDING"
   | "ACCEPTED"
   | "DECLINED"
@@ -203,11 +204,10 @@ export interface Booking {
   technician?: TechnicianProfile;
   serviceId: string;
   service?: Service;
-  bookingDate: string;
-  timeSlot: string;
-  startTime: string;
-  endTime: string;
-  totalPrice: number;
+  bookingDate?: string; // from frontend logic if stored locally, or backend
+  availabilityId?: string;
+  availability?: any; // To hold availability relation if backend populates it
+  price: number; // In Prisma it's Decimal
   status: BookingStatus;
   notes?: string;
   paymentStatus: PaymentStatus;
