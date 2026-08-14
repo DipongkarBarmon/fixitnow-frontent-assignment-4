@@ -34,14 +34,7 @@ export default function BookingsPage() {
   const cancelMutation = useCancelBooking(cancelId ?? "");
   const paymentMutation = useInitiatePayment();
 
-  // Determine status filter based on tab
-  let statusFilter: BookingStatus | undefined = undefined;
-  if (activeTab === "requested") statusFilter = "REQUESTED";
-  if (activeTab === "payment-now") statusFilter = "ACCEPTED";
-  if (activeTab === "completed") statusFilter = "COMPLETED";
-
   const { data, isLoading, isError } = useBookings({
-    status: statusFilter,
     page,
     limit: PAGE_SIZE,
   });
@@ -49,11 +42,16 @@ export default function BookingsPage() {
   const bookings = (data?.data ?? []).filter((b) => {
     const q = search.toLowerCase();
     const matchSearch = !search || b.service?.name?.toLowerCase().includes(q) || b.technician?.user?.name?.toLowerCase().includes(q);
+    if (!matchSearch) return false;
     
-    if (activeTab === "payment-now") {
-      return matchSearch && b.paymentStatus === "PENDING";
-    }
-    return matchSearch;
+    const currentPaymentStatus = b.paymentStatus || "PENDING";
+
+    if (activeTab === "pending") return b.status === "PENDING" || b.status === "REQUESTED";
+    if (activeTab === "payment-now") return b.status === "ACCEPTED" && currentPaymentStatus === "PENDING";
+    if (activeTab === "active") return (b.status === "ACCEPTED" && currentPaymentStatus === "PAID") || b.status === "IN_PROGRESS";
+    if (activeTab === "history") return ["COMPLETED", "CANCELLED", "DECLINED"].includes(b.status);
+    
+    return true; // all
   });
   
   const totalPages = data?.meta?.totalPages ?? 1;
@@ -91,8 +89,9 @@ export default function BookingsPage() {
 
   const renderCard = (b: Booking) => {
     // "REQUESTED" maps to pending visually in terms of actions
+    const currentPaymentStatus = b.paymentStatus || "PENDING";
     const canCancel = b.status === "REQUESTED" || b.status === "PENDING" || b.status === "ACCEPTED";
-    const canPay = b.paymentStatus === "PENDING" && b.status === "ACCEPTED";
+    const canPay = currentPaymentStatus === "PENDING" && b.status === "ACCEPTED";
     
     // Graceful fallback for missing fields in DB
     const displayDate = b.availability?.date || b.bookingDate || b.createdAt;
@@ -128,7 +127,7 @@ export default function BookingsPage() {
               <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Amount</span>
               <p className="text-xl font-black text-neutral-900 dark:text-white">{formatCurrency(amount)}</p>
             </div>
-            <PaymentStatusBadge status={b.paymentStatus} />
+            <PaymentStatusBadge status={currentPaymentStatus} />
           </div>
         </div>
 
@@ -200,9 +199,10 @@ export default function BookingsPage() {
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full sm:w-auto overflow-x-auto">
           <TabsList className="bg-neutral-100/80 p-1 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl inline-flex w-max">
             <TabsTrigger value="all" className="rounded-lg px-4">All</TabsTrigger>
-            <TabsTrigger value="requested" className="rounded-lg px-4">Requested</TabsTrigger>
+            <TabsTrigger value="pending" className="rounded-lg px-4">Pending</TabsTrigger>
             <TabsTrigger value="payment-now" className="rounded-lg px-4">Payment Now</TabsTrigger>
-            <TabsTrigger value="completed" className="rounded-lg px-4">Completed</TabsTrigger>
+            <TabsTrigger value="active" className="rounded-lg px-4">Active</TabsTrigger>
+            <TabsTrigger value="history" className="rounded-lg px-4">History</TabsTrigger>
           </TabsList>
         </Tabs>
 

@@ -21,11 +21,17 @@ export function useBookings(filters: BookingFilters = {}) {
   return useQuery({
     queryKey: QUERY_KEYS.BOOKINGS.FILTERED(filters as Record<string, unknown>),
     queryFn: () =>
-      apiGet<PaginatedResponse<Booking>>(API_ROUTES.BOOKINGS.LIST, {
+      apiGet<PaginatedResponse<Booking>>("/api/technician/get-all-booking", {
         ...filters,
         page: filters.page,
         limit: filters.limit,
-      }),
+      }).catch(() => 
+        apiGet<PaginatedResponse<Booking>>(API_ROUTES.BOOKINGS.LIST, {
+          ...filters,
+          page: filters.page,
+          limit: filters.limit,
+        })
+      ),
   });
 }
 
@@ -99,6 +105,66 @@ export function useCancelBooking(bookingId: string) {
       void queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.BOOKINGS.DETAIL(bookingId),
       });
+    },
+  });
+}
+
+/**
+ * Accept a booking (technician action).
+ */
+export function useAcceptBooking() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (bookingId: string) =>
+      apiPost<ApiResponse<Booking>>(API_ROUTES.TECHNICIANS.ACCEPT_BOOKING(bookingId), {}),
+    onSuccess: (_, bookingId) => {
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKINGS.ALL });
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKINGS.DETAIL(bookingId) });
+    },
+  });
+}
+
+/**
+ * Decline a booking (technician action).
+ */
+export function useDeclineBooking() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (bookingId: string) =>
+      apiPost<ApiResponse<Booking>>(API_ROUTES.TECHNICIANS.DECLINE_BOOKING(bookingId), {}),
+    onSuccess: (_, bookingId) => {
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKINGS.ALL });
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKINGS.DETAIL(bookingId) });
+    },
+  });
+}
+
+/**
+ * Start working on a booking (technician action).
+ */
+export function useStartWorkingBooking() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (bookingId: string) =>
+      apiPost<ApiResponse<Booking>>(API_ROUTES.TECHNICIANS.START_WORKING(bookingId), {}),
+    onSuccess: (_, bookingId) => {
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKINGS.ALL });
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKINGS.DETAIL(bookingId) });
+    },
+  });
+}
+
+/**
+ * Complete a booking (technician action).
+ */
+export function useCompleteBooking() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (bookingId: string) =>
+      apiPost<ApiResponse<Booking>>(API_ROUTES.TECHNICIANS.COMPLETE_BOOKING(bookingId), {}),
+    onSuccess: (_, bookingId) => {
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKINGS.ALL });
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKINGS.DETAIL(bookingId) });
     },
   });
 }

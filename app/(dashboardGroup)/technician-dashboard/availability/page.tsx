@@ -5,25 +5,17 @@ import { format, parseISO } from "date-fns";
 import {
   Calendar as CalendarIcon,
   Clock,
-  Plus,
-  X,
   CheckCircle2,
   Lock,
   Loader2,
-  Trash2,
+  X,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AvailabilityForm } from "../_components/AvailabilityForm";
 import {
@@ -35,8 +27,8 @@ import {
 export default function AvailabilityPage() {
   const [availabilities, setAvailabilities] = useState<Availability[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAddSlotOpen, setIsAddSlotOpen] = useState(false);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   const loadAvailabilities = async () => {
     setIsLoading(true);
@@ -78,7 +70,6 @@ export default function AvailabilityPage() {
   };
 
   const handleFormSuccess = () => {
-    setIsAddSlotOpen(false);
     loadAvailabilities();
   };
 
@@ -86,22 +77,29 @@ export default function AvailabilityPage() {
 
   // Group Upcoming (>= today)
   const upcomingGrouped = availabilities.reduce((acc, curr) => {
-    const dateStr = curr.date.split("T")[0];
-    if (dateStr >= todayStr) {
-      if (!acc[dateStr]) acc[dateStr] = [];
-      acc[dateStr].push(curr);
+    try {
+      const dateStr = format(new Date(curr.date), "yyyy-MM-dd");
+      if (dateStr >= todayStr) {
+        if (!acc[dateStr]) acc[dateStr] = [];
+        acc[dateStr].push(curr);
+      }
+    } catch (e) {
+      // Ignore invalid date strings
     }
     return acc;
   }, {} as Record<string, Availability[]>);
   const sortedUpcomingDates = Object.keys(upcomingGrouped).sort();
 
-  // Group History (< today and isBooked)
+  // Group History (< today)
   const historyGrouped = availabilities.reduce((acc, curr) => {
-    const dateStr = curr.date.split("T")[0];
-    if (dateStr < todayStr && curr.isBooked) {
-      if (!acc[dateStr]) acc[dateStr] = [];
-      acc[dateStr].push(curr);
-    }
+    try {
+      const dateStr = format(new Date(curr.date), "yyyy-MM-dd");
+      // History should show all past slots, booked or not.
+      if (dateStr < todayStr) {
+        if (!acc[dateStr]) acc[dateStr] = [];
+        acc[dateStr].push(curr);
+      }
+    } catch (e) {}
     return acc;
   }, {} as Record<string, Availability[]>);
   const sortedHistoryDates = Object.keys(historyGrouped).sort().reverse(); // Show latest history first
@@ -118,13 +116,30 @@ export default function AvailabilityPage() {
             Set your working hours, manage bookable time slots, and view appointment history.
           </p>
         </div>
-        <Button
-          onClick={() => setIsAddSlotOpen(true)}
-          className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm transition-all"
+        <Button 
+          onClick={() => setShowForm(!showForm)} 
+          className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
         >
-          <Plus className="size-4" /> Add Time Slot
+          {showForm ? (
+            <>
+              <X className="mr-2 size-4" />
+              Close
+            </>
+          ) : (
+            <>
+              <Plus className="mr-2 size-4" />
+              Add Availability
+            </>
+          )}
         </Button>
       </div>
+
+      {/* Add Slot Form Component */}
+      {showForm && (
+        <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+          <AvailabilityForm onSuccess={handleFormSuccess} />
+        </div>
+      )}
 
       {/* Quick Summary Banner */}
       <div className="grid gap-4 sm:grid-cols-2">
@@ -150,7 +165,13 @@ export default function AvailabilityPage() {
             <div>
               <p className="text-xs text-neutral-500">Total Upcoming Slots</p>
               <p className="text-lg font-bold text-neutral-900 dark:text-white">
-                {availabilities.filter((a) => a.date.split("T")[0] >= todayStr).length} Slots
+                {availabilities.filter((a) => {
+                  try {
+                    return format(new Date(a.date), "yyyy-MM-dd") >= todayStr;
+                  } catch(e) {
+                    return false;
+                  }
+                }).length} Slots
               </p>
             </div>
           </CardContent>
@@ -179,11 +200,8 @@ export default function AvailabilityPage() {
                   No upcoming availability
                 </h3>
                 <p className="mb-4 text-sm text-neutral-500 dark:text-neutral-400 max-w-sm">
-                  You haven't defined any upcoming working hours yet. Add time slots so customers can book your services.
+                  You haven't defined any upcoming working hours yet. Use the calendar form above to add time slots so customers can book your services.
                 </p>
-                <Button onClick={() => setIsAddSlotOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                  Add Your First Slot
-                </Button>
               </CardContent>
             </Card>
           ) : (
@@ -352,20 +370,6 @@ export default function AvailabilityPage() {
           )}
         </TabsContent>
       </Tabs>
-
-      {/* Add Slot Dialog */}
-      <Dialog open={isAddSlotOpen} onOpenChange={setIsAddSlotOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Add Working Time Slot</DialogTitle>
-            <DialogDescription>
-              Select a date and define your working window for customer bookings.
-            </DialogDescription>
-          </DialogHeader>
-
-          <AvailabilityForm onSuccess={handleFormSuccess} />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

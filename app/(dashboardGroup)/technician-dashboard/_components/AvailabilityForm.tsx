@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Loader2, Clock } from "lucide-react";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -34,7 +36,7 @@ interface AvailabilityFormProps {
 }
 
 export function AvailabilityForm({ onSuccess }: AvailabilityFormProps) {
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState<Date | undefined>(new Date());
   const [startTimeStr, setStartTimeStr] = useState("");
   const [endTimeStr, setEndTimeStr] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,10 +52,9 @@ export function AvailabilityForm({ onSuccess }: AvailabilityFormProps) {
     try {
       setIsSubmitting(true);
 
-      // Create proper Date objects from the inputs
-      // date is "YYYY-MM-DD", startTime is "HH:mm"
-      const startTime = new Date(`${date}T${startTimeStr}:00`);
-      const endTime = new Date(`${date}T${endTimeStr}:00`);
+      const dateString = format(date, "yyyy-MM-dd");
+      const startTime = new Date(`${dateString}T${startTimeStr}:00`);
+      const endTime = new Date(`${dateString}T${endTimeStr}:00`);
 
       if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
         toast.error("Invalid date or time format");
@@ -66,14 +67,13 @@ export function AvailabilityForm({ onSuccess }: AvailabilityFormProps) {
       }
 
       const res = await createAvailabilityAction({
-        date: new Date(date).toISOString(),
+        date: new Date(dateString).toISOString(),
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
       });
 
       if (res.success) {
         toast.success("Availability slot created successfully");
-        setDate("");
         setStartTimeStr("");
         setEndTimeStr("");
         onSuccess?.();
@@ -88,81 +88,92 @@ export function AvailabilityForm({ onSuccess }: AvailabilityFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="space-y-2">
-        <Label htmlFor="date" className="text-neutral-700 dark:text-neutral-300">
-          Date
-        </Label>
-        <Input
-          id="date"
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          required
-          className="bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800"
-        />
-      </div>
-      
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="startTime" className="text-neutral-700 dark:text-neutral-300">
-            Start Time
-          </Label>
-          <Select value={startTimeStr} onValueChange={setStartTimeStr} required>
-            <SelectTrigger id="startTime" className="bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800">
-              <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
-                <Clock className="h-4 w-4" />
-                <SelectValue placeholder="Select start" />
+    <Card className="border-neutral-200 dark:border-neutral-800 shadow-sm w-full">
+      <CardHeader>
+        <CardTitle>Add Working Time Slot</CardTitle>
+        <CardDescription>
+          Select a date from the calendar and define your working window.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-8">
+          {/* Calendar Section */}
+          <div className="flex-shrink-0 space-y-3">
+            <Label className="text-neutral-700 dark:text-neutral-300">Select Date</Label>
+            <div className="rounded-md border border-neutral-200 bg-white p-2 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 inline-block">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={setDate}
+                className="pointer-events-auto"
+                disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+              />
+            </div>
+          </div>
+          
+          {/* Time Options Section */}
+          <div className="flex-1 space-y-6 flex flex-col justify-center">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startTime" className="text-neutral-700 dark:text-neutral-300">
+                  Start Time
+                </Label>
+                <Select value={startTimeStr} onValueChange={setStartTimeStr} required>
+                  <SelectTrigger id="startTime" className="bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 h-11">
+                    <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
+                      <Clock className="h-4 w-4" />
+                      <SelectValue placeholder="Select start" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIME_OPTIONS.map((time) => (
+                      <SelectItem key={`start-${time.value}`} value={time.value}>
+                        {time.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </SelectTrigger>
-            <SelectContent>
-              {TIME_OPTIONS.map((time) => (
-                <SelectItem key={`start-${time.value}`} value={time.value}>
-                  {time.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="endTime" className="text-neutral-700 dark:text-neutral-300">
-            End Time
-          </Label>
-          <Select value={endTimeStr} onValueChange={setEndTimeStr} required>
-            <SelectTrigger id="endTime" className="bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800">
-              <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
-                <Clock className="h-4 w-4" />
-                <SelectValue placeholder="Select end" />
+              
+              <div className="space-y-2">
+                <Label htmlFor="endTime" className="text-neutral-700 dark:text-neutral-300">
+                  End Time
+                </Label>
+                <Select value={endTimeStr} onValueChange={setEndTimeStr} required>
+                  <SelectTrigger id="endTime" className="bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 h-11">
+                    <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
+                      <Clock className="h-4 w-4" />
+                      <SelectValue placeholder="Select end" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIME_OPTIONS.map((time) => (
+                      <SelectItem key={`end-${time.value}`} value={time.value}>
+                        {time.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </SelectTrigger>
-            <SelectContent>
-              {TIME_OPTIONS.map((time) => (
-                <SelectItem key={`end-${time.value}`} value={time.value}>
-                  {time.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+            </div>
 
-      <div className="pt-2">
-        <Button
-          type="submit"
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all font-medium py-2.5"
-          disabled={isSubmitting || !date || !startTimeStr || !endTimeStr}
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            "Add Availability Slot"
-          )}
-        </Button>
-      </div>
-    </form>
+            <Button
+              type="submit"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all font-medium py-6 text-base rounded-xl mt-4"
+              disabled={isSubmitting || !date || !startTimeStr || !endTimeStr}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Saving Slot...
+                </>
+              ) : (
+                "Save Availability Slot"
+              )}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

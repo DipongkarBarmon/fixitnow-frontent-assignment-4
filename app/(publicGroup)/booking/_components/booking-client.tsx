@@ -57,32 +57,33 @@ export default function BookingClient() {
     return (
       <div className="py-20 text-center">
         <p className="text-lg text-neutral-600 dark:text-neutral-400">Service not found.</p>
-        <div className="mt-4 text-left p-4 bg-red-50 text-red-600 rounded-md max-w-xl mx-auto overflow-auto text-xs">
-          <strong>Debug Info:</strong>
-          <pre>{JSON.stringify({ serviceId, serviceRes, serviceError }, null, 2)}</pre>
-        </div>
         <Button className="mt-4" onClick={() => router.push("/services")}>Back to Services</Button>
       </div>
     );
   }
 
-  // Find availability for the selected date
+  // Find availability slots for the selected date
   const selectedDateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
-  const dayAvailability = availabilityData.find((a) => {
-    // some backends return ISO strings, some return YYYY-MM-DD
-    const aDateStr = a.date.split("T")[0];
-    return aDateStr === selectedDateStr;
-  });
   
-  // Dummy slots if backend availability is empty for demo purposes
-  const timeSlots = dayAvailability?.timeSlots?.length 
-    ? dayAvailability.timeSlots 
-    : [
-        { id: "1", startTime: "09:00", endTime: "10:00", isBooked: false },
-        { id: "2", startTime: "11:00", endTime: "12:00", isBooked: true },
-        { id: "3", startTime: "14:00", endTime: "15:00", isBooked: false },
-        { id: "4", startTime: "16:00", endTime: "17:00", isBooked: false },
-      ];
+  // availabilityData is an array of Availability objects from the backend.
+  // Each object represents a time slot.
+  const timeSlots = availabilityData
+    .filter((a) => {
+      try {
+        const aDateStr = format(new Date(a.date), "yyyy-MM-dd");
+        return aDateStr === selectedDateStr;
+      } catch (e) {
+        return false;
+      }
+    })
+    .map((a) => ({
+      id: a.id,
+      startTime: format(new Date(a.startTime), "hh:mm a"),
+      endTime: format(new Date(a.endTime), "hh:mm a"),
+      isBooked: a.isBooked,
+      originalSlot: a,
+    }))
+    .sort((a, b) => new Date(`1970/01/01 ${a.startTime}`).getTime() - new Date(`1970/01/01 ${b.startTime}`).getTime());
 
   const handleNextStep = () => {
     if (step === 2 && (!selectedDate || !selectedTimeSlot)) {
@@ -98,7 +99,7 @@ export default function BookingClient() {
     createBookingMutation.mutate({
       serviceId: service.id,
       technicianId: technicianId,
-      availabilityId: dayAvailability?.id || selectedTimeSlot.id,
+      availabilityId: selectedTimeSlot.id,
       price: service.startingPrice || (service as any).price || 0,
       
       // Fallbacks in case the backend also requires these fields

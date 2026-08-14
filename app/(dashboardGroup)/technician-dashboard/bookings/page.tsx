@@ -17,6 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  ListTodo,
+  Archive,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,36 +44,61 @@ import { BookingStatusBadge } from "@/components/shared/booking-status-badge";
 import { PaymentStatusBadge } from "@/components/shared/payment-status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { CardSkeleton } from "@/components/shared/loading";
-import { useBookings, useUpdateBookingStatus } from "@/hooks";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  useBookings,
+  useAcceptBooking,
+  useDeclineBooking,
+  useStartWorkingBooking,
+  useCompleteBooking,
+  useMyTechnicianProfile,
+} from "@/hooks";
 import { formatCurrency, formatDate } from "@/utils/format";
-import type { Booking, BookingStatus } from "@/types";
+import type { Booking } from "@/types";
 
 export default function TechnicianBookingsPage() {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [activeTab, setActiveTab] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   const { data: bookingsRes, isLoading } = useBookings({
     page,
     limit: 10,
-    status: statusFilter === "ALL" ? undefined : (statusFilter as BookingStatus),
   });
 
-  const updateStatusMutation = useUpdateBookingStatus();
+  const acceptMutation = useAcceptBooking();
+  const declineMutation = useDeclineBooking();
+  const startMutation = useStartWorkingBooking();
+  const completeMutation = useCompleteBooking();
+
+  const isPending =
+    acceptMutation.isPending ||
+    declineMutation.isPending ||
+    startMutation.isPending ||
+    completeMutation.isPending;
 
   const bookings: Booking[] = bookingsRes?.data ?? [];
   const meta = bookingsRes?.meta;
 
-  const handleStatusChange = async (
-    bookingId: string,
-    status: "ACCEPTED" | "DECLINED" | "IN_PROGRESS" | "COMPLETED"
-  ) => {
+  const handleAction = async (bookingId: string, actionType: "accept" | "decline" | "start" | "complete") => {
     try {
-      await updateStatusMutation.mutateAsync({ id: bookingId, status });
-      toast.success(`Booking marked as ${status.replace("_", " ")}`);
+      if (actionType === "accept") await acceptMutation.mutateAsync(bookingId);
+      if (actionType === "decline") await declineMutation.mutateAsync(bookingId);
+      if (actionType === "start") await startMutation.mutateAsync(bookingId);
+      if (actionType === "complete") await completeMutation.mutateAsync(bookingId);
+
+      toast.success(`Booking successfully updated`);
+      
+      // Update local state if modal is open
       if (selectedBooking && selectedBooking.id === bookingId) {
-        setSelectedBooking((prev) => (prev ? { ...prev, status } : null));
+        let newStatus = selectedBooking.status;
+        if (actionType === "accept") newStatus = "ACCEPTED";
+        if (actionType === "decline") newStatus = "DECLINED";
+        if (actionType === "start") newStatus = "IN_PROGRESS";
+        if (actionType === "complete") newStatus = "COMPLETED";
+        
+        setSelectedBooking({ ...selectedBooking, status: newStatus as any });
       }
     } catch {
       toast.error("Failed to update booking status");
@@ -79,14 +106,23 @@ export default function TechnicianBookingsPage() {
   };
 
   const filteredBookings = bookings.filter((b) => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return (
-      b.service?.name?.toLowerCase().includes(s) ||
-      b.customer?.name?.toLowerCase().includes(s) ||
-      b.customer?.email?.toLowerCase().includes(s) ||
-      b.id.toLowerCase().includes(s)
-    );
+    // Search filter
+    if (search) {
+      const s = search.toLowerCase();
+      const matchesSearch =
+        b.service?.name?.toLowerCase().includes(s) ||
+        b.customer?.name?.toLowerCase().includes(s) ||
+        b.customer?.email?.toLowerCase().includes(s) ||
+        b.id.toLowerCase().includes(s);
+      if (!matchesSearch) return false;
+    }
+
+    // Tab filter
+    if (activeTab === "pending") return b.status === "PENDING" || b.status === "REQUESTED";
+    if (activeTab === "accepted") return b.status === "ACCEPTED" || b.status === "IN_PROGRESS";
+    if (activeTab === "history") return ["COMPLETED", "DECLINED", "CANCELLED"].includes(b.status);
+    
+    return true; // all
   });
 
   return (
@@ -113,20 +149,36 @@ export default function TechnicianBookingsPage() {
           />
         </div>
 
-        <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val); setPage(1); }}>
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="All Statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All Statuses</SelectItem>
-            <SelectItem value="PENDING">Pending Requests</SelectItem>
-            <SelectItem value="ACCEPTED">Accepted</SelectItem>
-            <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-            <SelectItem value="COMPLETED">Completed</SelectItem>
-            <SelectItem value="DECLINED">Declined</SelectItem>
-            <SelectItem value="CANCELLED">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0 hide-scrollbar">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-[320px]">
+            <TabsList className="w-full h-12 bg-white/50 dark:bg-neutral-900/50 backdrop-blur-md border border-neutral-200/50 dark:border-neutral-800/50 p-1 rounded-xl shadow-sm">
+              <TabsTrigger 
+                value="all" 
+                className="rounded-lg gap-2 data-[state=active]:bg-violet-100 data-[state=active]:text-violet-700 dark:data-[state=active]:bg-violet-500/20 dark:data-[state=active]:text-violet-300 transition-all duration-300"
+              >
+                <ListTodo className="size-4" /> All
+              </TabsTrigger>
+              <TabsTrigger 
+                value="pending" 
+                className="rounded-lg gap-2 data-[state=active]:bg-amber-100 data-[state=active]:text-amber-700 dark:data-[state=active]:bg-amber-500/20 dark:data-[state=active]:text-amber-300 transition-all duration-300"
+              >
+                <Clock className="size-4" /> Pending
+              </TabsTrigger>
+              <TabsTrigger 
+                value="accepted" 
+                className="rounded-lg gap-2 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 dark:data-[state=active]:bg-blue-500/20 dark:data-[state=active]:text-blue-300 transition-all duration-300"
+              >
+                <CheckCircle2 className="size-4" /> Accepted
+              </TabsTrigger>
+              <TabsTrigger 
+                value="history" 
+                className="rounded-lg gap-2 data-[state=active]:bg-neutral-200 data-[state=active]:text-neutral-800 dark:data-[state=active]:bg-neutral-800 dark:data-[state=active]:text-neutral-200 transition-all duration-300"
+              >
+                <Archive className="size-4" /> History
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       {/* Bookings List */}
@@ -147,8 +199,9 @@ export default function TechnicianBookingsPage() {
           {filteredBookings.map((b) => (
             <Card
               key={b.id}
-              className="border-neutral-200 transition-all hover:border-neutral-300 dark:border-neutral-800"
+              className="group relative overflow-hidden border border-neutral-200/60 bg-white/60 backdrop-blur-xl transition-all duration-300 hover:border-violet-500/30 hover:shadow-lg hover:shadow-violet-500/5 dark:border-neutral-800/60 dark:bg-neutral-900/60"
             >
+              <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-violet-500 to-fuchsia-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               <CardContent className="p-5">
                 <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
                   {/* Left Column: Service & Customer Info */}
@@ -158,7 +211,7 @@ export default function TechnicianBookingsPage() {
                         {b.service?.name || "Home Service"}
                       </h3>
                       <BookingStatusBadge status={b.status} />
-                      <PaymentStatusBadge status={b.paymentStatus} />
+                      <PaymentStatusBadge status={b.paymentStatus || "PENDING"} />
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
@@ -198,29 +251,29 @@ export default function TechnicianBookingsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="gap-1 text-xs"
+                        className="gap-1.5 text-xs rounded-full border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                         onClick={() => setSelectedBooking(b)}
                       >
                         <Eye className="size-3.5" /> Details
                       </Button>
 
                       {/* 4 Dedicated Actions */}
-                      {b.status === "PENDING" && (
+                      {(b.status === "PENDING" || b.status === "REQUESTED") && (
                         <>
                           <Button
                             size="sm"
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1"
-                            disabled={updateStatusMutation.isPending}
-                            onClick={() => handleStatusChange(b.id, "ACCEPTED")}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 rounded-full shadow-sm shadow-emerald-500/20 transition-all hover:shadow-emerald-500/40"
+                            disabled={isPending}
+                            onClick={() => handleAction(b.id, "accept")}
                           >
                             <CheckCircle2 className="size-3.5" /> Accept
                           </Button>
                           <Button
                             size="sm"
                             variant="destructive"
-                            className="text-xs gap-1"
-                            disabled={updateStatusMutation.isPending}
-                            onClick={() => handleStatusChange(b.id, "DECLINED")}
+                            className="text-xs gap-1.5 rounded-full shadow-sm shadow-red-500/20 transition-all hover:shadow-red-500/40"
+                            disabled={isPending}
+                            onClick={() => handleAction(b.id, "decline")}
                           >
                             <XCircle className="size-3.5" /> Decline
                           </Button>
@@ -228,25 +281,29 @@ export default function TechnicianBookingsPage() {
                       )}
 
                       {b.status === "ACCEPTED" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-300 dark:hover:bg-purple-950 text-xs gap-1"
-                          disabled={updateStatusMutation.isPending}
-                          onClick={() => handleStatusChange(b.id, "IN_PROGRESS")}
-                        >
-                          <PlayCircle className="size-3.5" /> Mark In Progress
-                        </Button>
+                        <div className="flex flex-col items-center gap-1">
+                          <Button
+                            size="sm"
+                            className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white text-xs gap-1.5 rounded-full shadow-md shadow-violet-500/20 transition-all hover:shadow-violet-500/40"
+                            disabled={isPending || (b.paymentStatus || "PENDING") !== "PAID"}
+                            onClick={() => handleAction(b.id, "start")}
+                          >
+                            <PlayCircle className="size-3.5" /> Start Service
+                          </Button>
+                          {(b.paymentStatus || "PENDING") !== "PAID" && (
+                            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Waiting for Payment</span>
+                          )}
+                        </div>
                       )}
 
                       {b.status === "IN_PROGRESS" && (
                         <Button
                           size="sm"
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1"
-                          disabled={updateStatusMutation.isPending}
-                          onClick={() => handleStatusChange(b.id, "COMPLETED")}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 rounded-full shadow-sm shadow-emerald-500/20 transition-all hover:shadow-emerald-500/40"
+                          disabled={isPending}
+                          onClick={() => handleAction(b.id, "complete")}
                         >
-                          <CheckCircle2 className="size-3.5" /> Mark Completed
+                          <CheckCircle2 className="size-3.5" /> Complete Job
                         </Button>
                       )}
                     </div>
@@ -355,7 +412,7 @@ export default function TechnicianBookingsPage() {
                     {formatCurrency(selectedBooking.totalPrice || 0)}
                   </p>
                   <div className="mt-1">
-                    <PaymentStatusBadge status={selectedBooking.paymentStatus} />
+                    <PaymentStatusBadge status={selectedBooking.paymentStatus || "PENDING"} />
                   </div>
                 </div>
               </div>
@@ -371,44 +428,49 @@ export default function TechnicianBookingsPage() {
 
               {/* Status Action Buttons in Modal */}
               <div className="flex justify-end gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
-                {selectedBooking.status === "PENDING" && (
+                {(selectedBooking.status === "PENDING" || selectedBooking.status === "REQUESTED") && (
                   <>
                     <Button
                       size="sm"
                       className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                      disabled={updateStatusMutation.isPending}
-                      onClick={() => handleStatusChange(selectedBooking.id, "ACCEPTED")}
+                      disabled={isPending}
+                      onClick={() => handleAction(selectedBooking.id, "accept")}
                     >
                       Accept Booking
                     </Button>
                     <Button
                       size="sm"
                       variant="destructive"
-                      disabled={updateStatusMutation.isPending}
-                      onClick={() => handleStatusChange(selectedBooking.id, "DECLINED")}
+                      disabled={isPending}
+                      onClick={() => handleAction(selectedBooking.id, "decline")}
                     >
                       Decline
                     </Button>
                   </>
                 )}
                 {selectedBooking.status === "ACCEPTED" && (
-                  <Button
-                    size="sm"
-                    className="bg-purple-600 hover:bg-purple-700 text-white"
-                    disabled={updateStatusMutation.isPending}
-                    onClick={() => handleStatusChange(selectedBooking.id, "IN_PROGRESS")}
-                  >
-                    Start Service (In Progress)
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {(selectedBooking.paymentStatus || "PENDING") !== "PAID" && (
+                      <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Payment Required</span>
+                    )}
+                    <Button
+                      size="sm"
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                      disabled={isPending || (selectedBooking.paymentStatus || "PENDING") !== "PAID"}
+                      onClick={() => handleAction(selectedBooking.id, "start")}
+                    >
+                      Start Service
+                    </Button>
+                  </div>
                 )}
                 {selectedBooking.status === "IN_PROGRESS" && (
                   <Button
                     size="sm"
                     className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                    disabled={updateStatusMutation.isPending}
-                    onClick={() => handleStatusChange(selectedBooking.id, "COMPLETED")}
+                    disabled={isPending}
+                    onClick={() => handleAction(selectedBooking.id, "complete")}
                   >
-                    Complete Job
+                    Completed
                   </Button>
                 )}
               </div>
