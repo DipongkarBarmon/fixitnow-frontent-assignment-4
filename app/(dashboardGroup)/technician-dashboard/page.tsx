@@ -38,7 +38,8 @@ export default function TechnicianDashboard() {
   const updateStatusMutation = useUpdateBookingStatus();
 
   const profile = profileRes?.data;
-  const bookings: Booking[] = bookingsRes?.data ?? [];
+  const rawData = bookingsRes?.data;
+  const bookings: Booking[] = Array.isArray(rawData) ? rawData : (Array.isArray((rawData as any)?.data) ? (rawData as any).data : []);
 
   // Calculate live statistics
   const pendingBookings = bookings.filter((b) => b.status === "PENDING");

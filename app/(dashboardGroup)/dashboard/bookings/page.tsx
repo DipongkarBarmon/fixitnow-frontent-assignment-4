@@ -39,7 +39,11 @@ export default function BookingsPage() {
     limit: PAGE_SIZE,
   });
 
-  const bookings = (data?.data ?? []).filter((b) => {
+  const rawData = data?.data;
+  const bookingsData = Array.isArray(rawData) ? rawData : (Array.isArray((rawData as any)?.data) ? (rawData as any).data : []);
+  const meta = data?.meta ?? (rawData as any)?.meta ?? {};
+
+  const bookings = bookingsData.filter((b: any) => {
     const q = search.toLowerCase();
     const matchSearch = !search || b.service?.name?.toLowerCase().includes(q) || b.technician?.user?.name?.toLowerCase().includes(q);
     if (!matchSearch) return false;
@@ -54,7 +58,7 @@ export default function BookingsPage() {
     return true; // all
   });
   
-  const totalPages = data?.meta?.totalPages ?? 1;
+  const totalPages = meta.totalPages ?? 1;
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);

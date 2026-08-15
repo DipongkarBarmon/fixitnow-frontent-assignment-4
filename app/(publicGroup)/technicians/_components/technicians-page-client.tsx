@@ -189,29 +189,27 @@ export function TechniciansPageClient() {
     queryFn: async () => {
       try {
         const res = await getAllTechnicianProfilesAction();
-        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-          return res.data;
+        if (res.success) {
+          let dataToUse = res.data;
+          if (dataToUse && !Array.isArray(dataToUse) && Array.isArray((dataToUse as any).data)) {
+            dataToUse = (dataToUse as any).data;
+          }
+          if (Array.isArray(dataToUse) && dataToUse.length > 0) {
+            return dataToUse;
+          }
         }
       } catch (err) {
         console.warn("[TechniciansPageClient] Action fetch failed:", err);
       }
-      return demoTechnicians;
+      return [];
     },
   });
 
   const allTechnicians: TechnicianProfile[] = useMemo(() => {
-    if (queryData && Array.isArray(queryData) && queryData.length > 0) {
-      // Merge unique by ID
-      const map = new Map<string, TechnicianProfile>();
-      queryData.forEach((t) => map.set(t.id || t.userId, t));
-      demoTechnicians.forEach((t) => {
-        if (!map.has(t.id || t.userId)) {
-          map.set(t.id || t.userId, t);
-        }
-      });
-      return Array.from(map.values());
+    if (queryData && Array.isArray(queryData)) {
+      return queryData;
     }
-    return demoTechnicians;
+    return [];
   }, [queryData]);
 
   const handleReset = () => {

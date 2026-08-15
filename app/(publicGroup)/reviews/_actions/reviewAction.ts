@@ -29,7 +29,8 @@ export async function getAllReviewsAction(limit?: number, serviceId?: string): P
     }
 
     const result = await res.json();
-    return result.data?.data || result.data || [];
+    const rawData = result.data;
+    return Array.isArray(rawData) ? rawData : (Array.isArray((rawData as any)?.data) ? (rawData as any).data : []);
   } catch (err) {
     console.error("[getAllReviewsAction] Failed to fetch reviews:", err);
     return [];

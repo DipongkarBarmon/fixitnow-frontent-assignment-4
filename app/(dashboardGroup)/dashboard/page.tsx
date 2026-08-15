@@ -25,12 +25,15 @@ export default function CustomerDashboard() {
   const { user } = useAuth();
   const { data, isLoading, isError } = useBookings({ limit: 5 });
 
-  const bookings = data?.data ?? [];
-  const total = data?.meta?.total ?? 0;
-  const completed = bookings.filter((b) => b.status === "COMPLETED").length;
-  const pending = bookings.filter((b) => b.status === "PENDING").length;
+  const rawData = data?.data;
+  const bookings = Array.isArray(rawData) ? rawData : (Array.isArray((rawData as any)?.data) ? (rawData as any).data : []);
+  const meta = data?.meta ?? (rawData as any)?.meta ?? {};
+  
+  const total = meta.total ?? bookings.length ?? 0;
+  const completed = bookings.filter((b: any) => b.status === "COMPLETED").length;
+  const pending = bookings.filter((b: any) => b.status === "PENDING").length;
   // Use a broader fetch to count reviews – approximate from existing data
-  const reviewCount = bookings.filter((b) => b.review).length;
+  const reviewCount = bookings.filter((b: any) => b.review || (b.reviews && b.reviews.length > 0)).length;
 
   return (
     <div className="space-y-8">
@@ -123,25 +126,31 @@ export default function CustomerDashboard() {
             </p>
           ) : (
             <div className="space-y-3">
-              {bookings.map((booking) => (
-                <Link
-                  key={booking.id}
-                  href={`/dashboard/bookings/${booking.id}`}
-                  className="flex items-center justify-between rounded-lg border border-neutral-100 p-4 transition-colors hover:border-neutral-200 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:border-neutral-700 dark:hover:bg-neutral-900"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-neutral-900 dark:text-white">
-                      {booking.service?.name ?? "Service"}
-                    </p>
-                    <p className="truncate text-sm text-neutral-500">
-                      {booking.technician?.user?.name ?? "Technician"} •{" "}
-                      {formatDate(booking.bookingDate)} •{" "}
-                      {formatCurrency(booking.totalPrice || booking.price || 0)}
-                    </p>
-                  </div>
-                  <BookingStatusBadge status={booking.status} className="ml-3 shrink-0" />
-                </Link>
-              ))}
+              {bookings.map((booking: any) => {
+                const matchedAvailability = booking.technician?.availabilities?.find((a: any) => a.id === booking.availabilityId);
+                const displayDate = matchedAvailability?.date || booking.availability?.date || booking.createdAt;
+                const serviceName = booking.service?.name || booking.service?.title || "Service";
+
+                return (
+                  <Link
+                    key={booking.id}
+                    href={`/dashboard/bookings/${booking.id}`}
+                    className="flex items-center justify-between rounded-lg border border-neutral-100 p-4 transition-colors hover:border-neutral-200 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:border-neutral-700 dark:hover:bg-neutral-900"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-neutral-900 dark:text-white">
+                        {serviceName}
+                      </p>
+                      <p className="truncate text-sm text-neutral-500">
+                        {booking.technician?.user?.name ?? "Technician"} •{" "}
+                        {formatDate(displayDate)} •{" "}
+                        {formatCurrency(booking.totalPrice || booking.price || 0)}
+                      </p>
+                    </div>
+                    <BookingStatusBadge status={booking.status} className="ml-3 shrink-0" />
+                  </Link>
+                );
+              })}
             </div>
           )}
         </CardContent>

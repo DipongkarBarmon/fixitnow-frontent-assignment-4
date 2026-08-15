@@ -144,7 +144,7 @@ export default async function ReviewsPage() {
                 {/* Service info */}
                 <div className="mb-4 flex gap-2">
                   <Badge variant="secondary" className="text-xs">
-                    {typeof review.service === 'object' ? review.service?.name : review.service || "Service"}
+                    {typeof review.service === 'object' ? (review.service?.title || review.service?.name) : review.service || "Service"}
                   </Badge>
                   {review.id && (
                     <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-200 dark:border-emerald-800 dark:text-emerald-400">
@@ -156,7 +156,7 @@ export default async function ReviewsPage() {
                 {/* Customer */}
                 <div className="flex items-center gap-3 border-t border-neutral-100 pt-4 dark:border-neutral-800">
                   <Avatar className="size-9">
-                    <AvatarImage src={review.customer?.avatar || review.avatar} alt={review.customer?.name || review.customerName || "Customer"} />
+                    <AvatarImage src={review.customer?.profilePhoto || review.customer?.avatar || review.avatar} alt={review.customer?.name || review.customerName || "Customer"} />
                     <AvatarFallback>{getInitials(review.customer?.name || review.customerName || "Customer")}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">

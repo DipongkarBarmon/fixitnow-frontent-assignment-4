@@ -49,7 +49,8 @@ export default function TechnicianEarningsPage() {
   const { data: bookingsRes, isLoading } = useBookings({ limit: 50 });
   const { data: profileRes } = useMyTechnicianProfile();
 
-  const bookings: Booking[] = bookingsRes?.data ?? [];
+  const rawData = bookingsRes?.data;
+  const bookings: Booking[] = Array.isArray(rawData) ? rawData : (Array.isArray((rawData as any)?.data) ? (rawData as any).data : []);
   const completedBookings = bookings.filter((b) => b.status === "COMPLETED");
 
   const grossEarnings = completedBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);

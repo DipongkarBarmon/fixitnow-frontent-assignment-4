@@ -78,8 +78,9 @@ export default function TechnicianBookingsPage() {
     startMutation.isPending ||
     completeMutation.isPending;
 
-  const bookings: Booking[] = bookingsRes?.data ?? [];
-  const meta = bookingsRes?.meta;
+  const rawData = bookingsRes?.data;
+  const bookings: Booking[] = Array.isArray(rawData) ? rawData : (Array.isArray((rawData as any)?.data) ? (rawData as any).data : []);
+  const meta = bookingsRes?.meta ?? (rawData as any)?.meta ?? {};
 
   const handleAction = async (bookingId: string, actionType: "accept" | "decline" | "start" | "complete") => {
     try {

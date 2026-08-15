@@ -33,7 +33,8 @@ export default function AdminDashboard() {
   const { data: bookingsRes, isLoading: bookingsLoading } = useBookings({ limit: 6 });
 
   const stats = statsRes?.data;
-  const recentBookings: Booking[] = bookingsRes?.data ?? [];
+  const rawData = bookingsRes?.data;
+  const recentBookings: Booking[] = Array.isArray(rawData) ? rawData : (Array.isArray((rawData as any)?.data) ? (rawData as any).data : []);
 
   const totalUsers = stats?.totalUsers ?? 2450;
   const totalTechnicians = stats?.totalTechnicians ?? 185;

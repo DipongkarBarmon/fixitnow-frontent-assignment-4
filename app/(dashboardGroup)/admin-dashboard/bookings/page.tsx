@@ -59,8 +59,9 @@ export default function AdminBookingsPage() {
 
   const updateStatusMutation = useUpdateBookingStatus();
 
-  const bookings: Booking[] = bookingsRes?.data ?? [];
-  const meta = bookingsRes?.meta;
+  const rawData = bookingsRes?.data;
+  const bookings: Booking[] = Array.isArray(rawData) ? rawData : (Array.isArray((rawData as any)?.data) ? (rawData as any).data : []);
+  const meta = bookingsRes?.meta ?? (rawData as any)?.meta ?? {};
 
   const handleAdminCancel = async () => {
     if (!cancellingBooking) return;
