@@ -50,6 +50,8 @@ export {
   useReviews,
   useReviewsByService,
   useCreateReview,
+  useUpdateReview,
+  useDeleteReview,
 } from "./use-reviews";
 
 export {

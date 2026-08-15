@@ -136,7 +136,7 @@ export default function CustomerDashboard() {
                     <p className="truncate text-sm text-neutral-500">
                       {booking.technician?.user?.name ?? "Technician"} •{" "}
                       {formatDate(booking.bookingDate)} •{" "}
-                      {formatCurrency(booking.totalPrice)}
+                      {formatCurrency(booking.totalPrice || booking.price || 0)}
                     </p>
                   </div>
                   <BookingStatusBadge status={booking.status} className="ml-3 shrink-0" />

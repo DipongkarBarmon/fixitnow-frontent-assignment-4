@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiGet, apiPost } from "@/lib/axios-client";
+import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/axios-client";
 import { QUERY_KEYS, API_ROUTES } from "@/constants";
 import type {
   Review,
   ReviewFilters,
   CreateReviewInput,
+  UpdateReviewInput,
   ApiResponse,
   PaginatedResponse,
 } from "@/types";
@@ -62,6 +63,33 @@ export function useCreateReview() {
           queryKey: QUERY_KEYS.BOOKINGS.DETAIL(variables.bookingId),
         });
       }
+    },
+  });
+}
+
+/**
+ * Update an existing review.
+ */
+export function useUpdateReview() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateReviewInput }) =>
+      apiPatch<ApiResponse<Review>>(API_ROUTES.REVIEWS.UPDATE(id), data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.REVIEWS.ALL });
+    },
+  });
+}
+
+/**
+ * Delete an existing review.
+ */
+export function useDeleteReview() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiDelete<ApiResponse<null>>(API_ROUTES.REVIEWS.DELETE(id)),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.REVIEWS.ALL });
     },
   });
 }

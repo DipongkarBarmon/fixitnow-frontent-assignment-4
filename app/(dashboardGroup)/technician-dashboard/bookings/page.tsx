@@ -119,7 +119,7 @@ export default function TechnicianBookingsPage() {
 
     // Tab filter
     if (activeTab === "pending") return b.status === "PENDING" || b.status === "REQUESTED";
-    if (activeTab === "accepted") return b.status === "ACCEPTED" || b.status === "IN_PROGRESS";
+    if (activeTab === "accepted") return b.status === "ACCEPTED" || b.status === "PAID" || b.status === "IN_PROGRESS";
     if (activeTab === "history") return ["COMPLETED", "DECLINED", "CANCELLED"].includes(b.status);
     
     return true; // all
@@ -211,7 +211,9 @@ export default function TechnicianBookingsPage() {
                         {b.service?.name || "Home Service"}
                       </h3>
                       <BookingStatusBadge status={b.status} />
-                      <PaymentStatusBadge status={b.paymentStatus || "PENDING"} />
+                      {b.status !== "PAID" && b.status !== "COMPLETED" && b.status !== "IN_PROGRESS" && (
+                        <PaymentStatusBadge status={b.paymentStatus || "PENDING"} />
+                      )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
@@ -219,16 +221,25 @@ export default function TechnicianBookingsPage() {
                         <User className="size-3.5" />
                         Customer: <strong className="text-neutral-800 dark:text-neutral-200">{b.customer?.name || "Customer"}</strong>
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="size-3.5" />
-                        {formatDate(b.bookingDate || b.createdAt)}
-                      </span>
-                      {b.timeSlot && (
-                        <span className="flex items-center gap-1">
-                          <Clock className="size-3.5" />
-                          {b.timeSlot}
-                        </span>
-                      )}
+                      {(() => {
+                        const matchedAvailability = b.technician?.availabilities?.find((a: any) => a.id === b.availabilityId);
+                        const displayDate = matchedAvailability?.date || b.availability?.date || b.bookingDate || b.createdAt;
+                        const displayTime = b.timeSlot || matchedAvailability?.startTime || matchedAvailability?.timeSlots?.[0]?.startTime || b.availability?.startTime;
+                        return (
+                          <>
+                            <span className="flex items-center gap-1">
+                              <Calendar className="size-3.5" />
+                              {formatDate(displayDate)}
+                            </span>
+                            {displayTime && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="size-3.5" />
+                                {displayTime !== "TBD" ? formatDate(displayTime, "h:mm a") : displayTime}
+                              </span>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
 
                     {b.notes && (
@@ -243,7 +254,7 @@ export default function TechnicianBookingsPage() {
                     <div className="text-left lg:text-right">
                       <span className="text-xs text-neutral-400">Total Price</span>
                       <p className="text-lg font-bold text-neutral-900 dark:text-white">
-                        {formatCurrency(b.totalPrice || 0)}
+                        {formatCurrency(b.price || b.totalPrice || 0)}
                       </p>
                     </div>
 
@@ -280,17 +291,17 @@ export default function TechnicianBookingsPage() {
                         </>
                       )}
 
-                      {b.status === "ACCEPTED" && (
+                      {(b.status === "ACCEPTED" || b.status === "PAID") && (
                         <div className="flex flex-col items-center gap-1">
                           <Button
                             size="sm"
                             className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white text-xs gap-1.5 rounded-full shadow-md shadow-violet-500/20 transition-all hover:shadow-violet-500/40"
-                            disabled={isPending || (b.paymentStatus || "PENDING") !== "PAID"}
+                            disabled={isPending || (b.status !== "PAID" && !["PAID", "SUCCESS"].includes(b.paymentStatus || "PENDING"))}
                             onClick={() => handleAction(b.id, "start")}
                           >
                             <PlayCircle className="size-3.5" /> Start Service
                           </Button>
-                          {(b.paymentStatus || "PENDING") !== "PAID" && (
+                          {b.status !== "PAID" && !["PAID", "SUCCESS"].includes(b.paymentStatus || "PENDING") && (
                             <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Waiting for Payment</span>
                           )}
                         </div>
@@ -400,19 +411,30 @@ export default function TechnicianBookingsPage() {
               {/* Booking Schedule & Pricing */}
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div className="rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
-                  <p className="text-neutral-500">Scheduled Date & Time</p>
-                  <p className="mt-1 font-semibold text-neutral-900 dark:text-white">
-                    {formatDate(selectedBooking.bookingDate || selectedBooking.createdAt)}
-                  </p>
-                  <p className="text-neutral-500">{selectedBooking.timeSlot || "Not specified"}</p>
+                  {(() => {
+                    const matchedAvailability = selectedBooking.technician?.availabilities?.find((a: any) => a.id === selectedBooking.availabilityId);
+                    const displayDate = matchedAvailability?.date || selectedBooking.availability?.date || selectedBooking.bookingDate || selectedBooking.createdAt;
+                    const displayTime = selectedBooking.timeSlot || matchedAvailability?.startTime || matchedAvailability?.timeSlots?.[0]?.startTime || selectedBooking.availability?.startTime;
+                    return (
+                      <>
+                        <p className="text-neutral-500">Scheduled Date & Time</p>
+                        <p className="mt-1 font-semibold text-neutral-900 dark:text-white">
+                          {formatDate(displayDate)}
+                        </p>
+                        <p className="text-neutral-500">{displayTime ? (displayTime !== "TBD" ? formatDate(displayTime, "h:mm a") : displayTime) : "Not specified"}</p>
+                      </>
+                    );
+                  })()}
                 </div>
                 <div className="rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
                   <p className="text-neutral-500">Payment Status & Amount</p>
                   <p className="mt-1 font-semibold text-neutral-900 dark:text-white">
-                    {formatCurrency(selectedBooking.totalPrice || 0)}
+                    {formatCurrency(selectedBooking.price || selectedBooking.totalPrice || 0)}
                   </p>
                   <div className="mt-1">
-                    <PaymentStatusBadge status={selectedBooking.paymentStatus || "PENDING"} />
+                    {selectedBooking.status !== "PAID" && selectedBooking.status !== "COMPLETED" && selectedBooking.status !== "IN_PROGRESS" && (
+                      <PaymentStatusBadge status={selectedBooking.paymentStatus || "PENDING"} />
+                    )}
                   </div>
                 </div>
               </div>
@@ -448,15 +470,15 @@ export default function TechnicianBookingsPage() {
                     </Button>
                   </>
                 )}
-                {selectedBooking.status === "ACCEPTED" && (
+                {(selectedBooking.status === "ACCEPTED" || selectedBooking.status === "PAID") && (
                   <div className="flex items-center gap-2">
-                    {(selectedBooking.paymentStatus || "PENDING") !== "PAID" && (
+                    {selectedBooking.status !== "PAID" && !["PAID", "SUCCESS"].includes(selectedBooking.paymentStatus || "PENDING") && (
                       <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Payment Required</span>
                     )}
                     <Button
                       size="sm"
                       className="bg-purple-600 hover:bg-purple-700 text-white"
-                      disabled={isPending || (selectedBooking.paymentStatus || "PENDING") !== "PAID"}
+                      disabled={isPending || (selectedBooking.status !== "PAID" && !["PAID", "SUCCESS"].includes(selectedBooking.paymentStatus || "PENDING"))}
                       onClick={() => handleAction(selectedBooking.id, "start")}
                     >
                       Start Service

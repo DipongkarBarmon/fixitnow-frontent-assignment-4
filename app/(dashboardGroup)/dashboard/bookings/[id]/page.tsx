@@ -138,7 +138,10 @@ export default function BookingDetailPage() {
               </div>
               <div className="flex flex-wrap gap-4 text-sm text-neutral-600 dark:text-neutral-400">
                 <span className="flex items-center gap-1.5"><Calendar className="size-4" />{formatDate(booking.bookingDate)}</span>
-                <span className="flex items-center gap-1.5"><Clock className="size-4" />{booking.startTime} – {booking.endTime}</span>
+                <span className="flex items-center gap-1.5">
+                  <Clock className="size-4" />
+                  {booking.timeSlot || booking.startTime ? `${booking.startTime} – ${booking.endTime}` : "Not specified"}
+                </span>
               </div>
               {booking.notes && (
                 <div className="rounded-lg bg-neutral-50 p-3 dark:bg-neutral-800">
@@ -193,7 +196,7 @@ export default function BookingDetailPage() {
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-500">Service cost</span>
-                <span className="font-medium">{formatCurrency(booking.totalPrice)}</span>
+                <span className="font-medium">{formatCurrency(booking.totalPrice || booking.price || 0)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-500">Payment method</span>
@@ -208,7 +211,7 @@ export default function BookingDetailPage() {
               <div className="border-t border-neutral-100 pt-3 dark:border-neutral-800">
                 <div className="flex justify-between font-semibold">
                   <span>Total</span>
-                  <span className="text-lg">{formatCurrency(booking.totalPrice)}</span>
+                  <span className="text-lg">{formatCurrency(booking.totalPrice || booking.price || 0)}</span>
                 </div>
               </div>
               {canPay && (

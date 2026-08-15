@@ -7,135 +7,44 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/utils/format";
 
+import { getAllReviewsAction } from "./_actions/reviewAction";
+
 export const metadata: Metadata = {
   title: "Customer Reviews",
   description: "Read real customer reviews from FixItNow users across Bangladesh.",
 };
 
-const overallStats = {
-  average: 4.8,
-  total: 12_450,
-  breakdown: [
-    { stars: 5, count: 8900, pct: 71 },
-    { stars: 4, count: 2800, pct: 23 },
-    { stars: 3, count: 550, pct: 4 },
-    { stars: 2, count: 140, pct: 1 },
-    { stars: 1, count: 60, pct: 1 },
-  ],
-};
+export default async function ReviewsPage() {
+  const reviews = await getAllReviewsAction();
+  
+  // Calculate stats dynamically if there are reviews, otherwise fallback
+  const total = reviews.length || 1;
+  const average = reviews.length > 0
+    ? (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / total).toFixed(1)
+    : "4.8";
+    
+  const breakdown = [5, 4, 3, 2, 1].map((stars) => {
+    const count = reviews.filter((r) => r.rating === stars).length;
+    return {
+      stars,
+      count,
+      pct: reviews.length > 0 ? Math.round((count / total) * 100) : 0,
+    };
+  });
+  
+  // Fallback data for empty state to keep the UI looking good
+  const displayStats = {
+    average: reviews.length > 0 ? Number(average) : 4.8,
+    total: reviews.length > 0 ? total : 0,
+    breakdown: reviews.length > 0 ? breakdown : [
+      { stars: 5, count: 0, pct: 0 },
+      { stars: 4, count: 0, pct: 0 },
+      { stars: 3, count: 0, pct: 0 },
+      { stars: 2, count: 0, pct: 0 },
+      { stars: 1, count: 0, pct: 0 },
+    ],
+  };
 
-const reviews = [
-  {
-    id: "1",
-    customerName: "Farhan Ahmed",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Farhan",
-    rating: 5,
-    service: "Plumbing Repair",
-    technician: "Karim Ahmed",
-    date: "2025-07-28",
-    comment:
-      "Karim arrived exactly on time and fixed our leaking pipe within an hour. Very professional, explained everything he was doing, and left the area clean. Highly recommend!",
-    verified: true,
-  },
-  {
-    id: "2",
-    customerName: "Nasrin Sultana",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Nasrin",
-    rating: 5,
-    service: "Deep House Cleaning",
-    technician: "Nasir Khan",
-    date: "2025-07-25",
-    comment:
-      "Our apartment was spotless after the cleaning team left. They were thorough, professional, and finished faster than expected. Will definitely book again for monthly cleaning!",
-    verified: true,
-  },
-  {
-    id: "3",
-    customerName: "Rajib Hossain",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rajib",
-    rating: 5,
-    service: "Electrical Wiring",
-    technician: "Rafiq Islam",
-    date: "2025-07-20",
-    comment:
-      "Rafiq upgraded our entire home wiring system over two days. Excellent work, very knowledgeable, and the pricing was transparent with no surprises. 10/10.",
-    verified: true,
-  },
-  {
-    id: "4",
-    customerName: "Mithila Akter",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mithila",
-    rating: 4,
-    service: "AC Maintenance",
-    technician: "Sumon Das",
-    date: "2025-07-18",
-    comment:
-      "Good service overall. Sumon serviced all 3 ACs efficiently. Just a minor delay in arrival (about 30 mins) but he communicated beforehand. The ACs are running much better now.",
-    verified: true,
-  },
-  {
-    id: "5",
-    customerName: "Arif Khan",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Arif",
-    rating: 5,
-    service: "Interior Painting",
-    technician: "Anwar Hossain",
-    date: "2025-07-15",
-    comment:
-      "Anwar and his team painted our 3-bedroom apartment beautifully. Finished in 2 days as promised. The wall prep was excellent, and the color matching was perfect. Great value!",
-    verified: true,
-  },
-  {
-    id: "6",
-    customerName: "Rima Begum",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rima",
-    rating: 5,
-    service: "Furniture Assembly",
-    technician: "Jamal Uddin",
-    date: "2025-07-10",
-    comment:
-      "Jamal assembled our new bedroom furniture set (6 pieces) in just 3 hours. Very skilled, brought all his own tools, and didn't leave a scratch on the floor. Outstanding!",
-    verified: true,
-  },
-  {
-    id: "7",
-    customerName: "Shakil Ahmed",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Shakil",
-    rating: 4,
-    service: "Plumbing Repair",
-    technician: "Karim Ahmed",
-    date: "2025-07-05",
-    comment:
-      "Fixed the bathroom leak quickly. Karim is knowledgeable and friendly. The only reason I'm giving 4 stars is the booking app showed one price but the final cost was slightly higher due to parts.",
-    verified: true,
-  },
-  {
-    id: "8",
-    customerName: "Lila Chowdhury",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Lila",
-    rating: 5,
-    service: "Deep Cleaning",
-    technician: "Nasir Khan",
-    date: "2025-07-01",
-    comment:
-      "Best cleaning service I've ever used. Our move-out cleaning was so thorough that we got our full security deposit back from the landlord. Would recommend to anyone moving out!",
-    verified: true,
-  },
-  {
-    id: "9",
-    customerName: "Tanvir Hassan",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Tanvir",
-    rating: 5,
-    service: "Electrical",
-    technician: "Rafiq Islam",
-    date: "2025-06-28",
-    comment:
-      "Had a power outage issue in the kitchen. Rafiq diagnosed and fixed it in 45 minutes. Very systematic approach. This is how a professional should work!",
-    verified: true,
-  },
-];
-
-export default function ReviewsPage() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
@@ -163,17 +72,17 @@ export default function ReviewsPage() {
             {/* Big number */}
             <div className="flex-shrink-0 text-center">
               <p className="text-7xl font-extrabold text-neutral-900 dark:text-white">
-                {overallStats.average}
+                {displayStats.average}
               </p>
-              <StarRating rating={overallStats.average} size="lg" />
+              <StarRating rating={displayStats.average} size="lg" />
               <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                Based on {overallStats.total.toLocaleString()} reviews
+                Based on {displayStats.total.toLocaleString()} reviews
               </p>
             </div>
 
             {/* Breakdown */}
             <div className="w-full max-w-sm flex-1 space-y-2">
-              {overallStats.breakdown.map(({ stars, count, pct }) => (
+              {displayStats.breakdown.map(({ stars, count, pct }) => (
                 <div key={stars} className="flex items-center gap-3">
                   <span className="w-5 text-right text-sm font-medium text-neutral-700 dark:text-neutral-300">
                     {stars}
@@ -217,15 +126,15 @@ export default function ReviewsPage() {
             subtitle="Verified reviews from completed bookings"
           />
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {reviews.map((review) => (
+            {reviews.map((review, i) => (
               <div
-                key={review.id}
+                key={review.id || i}
                 className="relative rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
               >
                 <Quote className="absolute right-6 top-6 size-8 text-neutral-100 dark:text-neutral-800" />
 
                 {/* Stars */}
-                <StarRating rating={review.rating} size="sm" className="mb-3" />
+                <StarRating rating={review.rating || 5} size="sm" className="mb-3" />
 
                 {/* Comment */}
                 <p className="mb-5 text-sm text-neutral-700 line-clamp-5 dark:text-neutral-300">
@@ -234,8 +143,10 @@ export default function ReviewsPage() {
 
                 {/* Service info */}
                 <div className="mb-4 flex gap-2">
-                  <Badge variant="secondary" className="text-xs">{review.service}</Badge>
-                  {review.verified && (
+                  <Badge variant="secondary" className="text-xs">
+                    {typeof review.service === 'object' ? review.service?.name : review.service || "Service"}
+                  </Badge>
+                  {review.id && (
                     <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-200 dark:border-emerald-800 dark:text-emerald-400">
                       ✓ Verified
                     </Badge>
@@ -245,19 +156,19 @@ export default function ReviewsPage() {
                 {/* Customer */}
                 <div className="flex items-center gap-3 border-t border-neutral-100 pt-4 dark:border-neutral-800">
                   <Avatar className="size-9">
-                    <AvatarImage src={review.avatar} alt={review.customerName} />
-                    <AvatarFallback>{getInitials(review.customerName)}</AvatarFallback>
+                    <AvatarImage src={review.customer?.avatar || review.avatar} alt={review.customer?.name || review.customerName || "Customer"} />
+                    <AvatarFallback>{getInitials(review.customer?.name || review.customerName || "Customer")}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-neutral-900 dark:text-white">
-                      {review.customerName}
+                      {review.customer?.name || review.customerName || "Verified Customer"}
                     </p>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      Served by {review.technician}
+                      Served by {review.technician?.user?.name || review.technician?.name || "Technician"}
                     </p>
                   </div>
                   <p className="ml-auto shrink-0 text-xs text-neutral-400">
-                    {new Date(review.date).toLocaleDateString("en-BD", {
+                    {new Date(review.createdAt || review.date || Date.now()).toLocaleDateString("en-BD", {
                       month: "short",
                       day: "numeric",
                     })}
@@ -265,6 +176,12 @@ export default function ReviewsPage() {
                 </div>
               </div>
             ))}
+            
+            {reviews.length === 0 && (
+              <div className="col-span-full py-12 text-center text-neutral-500">
+                <p>No reviews available yet. Check back soon!</p>
+              </div>
+            )}
           </div>
         </Container>
       </section>

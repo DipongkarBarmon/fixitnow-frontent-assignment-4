@@ -239,13 +239,13 @@ export default async function TechnicianDetailPage({ params }: { params: Promise
                       <Quote className="absolute right-4 top-4 size-6 text-neutral-200 dark:text-neutral-700" />
                       <div className="mb-3 flex items-center gap-3">
                         <Avatar className="size-8">
-                          <AvatarImage src={getSafeAvatarUrl(review.avatar || review.customerAvatar || review.profilePhoto, review.customerName || "Customer")} alt={review.customerName || "Customer"} />
-                          <AvatarFallback className="text-xs">{getInitials(review.customerName || "Customer")}</AvatarFallback>
+                          <AvatarImage src={getSafeAvatarUrl(review.customer?.avatar || review.avatar || review.customerAvatar || review.profilePhoto, review.customer?.name || review.customerName || "Customer")} alt={review.customer?.name || review.customerName || "Customer"} />
+                          <AvatarFallback className="text-xs">{getInitials(review.customer?.name || review.customerName || "Customer")}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="text-sm font-semibold text-neutral-900 dark:text-white">{review.customerName || "Verified Customer"}</p>
+                          <p className="text-sm font-semibold text-neutral-900 dark:text-white">{review.customer?.name || review.customerName || "Verified Customer"}</p>
                           <p className="text-xs text-neutral-500">
-                            {typeof review.service === "object" ? review.service?.name : review.service || "General Service"} · {new Date(review.date || review.createdAt || Date.now()).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
+                            {typeof review.service === "object" ? review.service?.name : review.service || "General Service"} · {new Date(review.createdAt || review.date || Date.now()).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
                           </p>
                         </div>
                         <div className="ml-auto">

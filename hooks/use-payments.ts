@@ -43,7 +43,7 @@ export function useInitiatePayment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: InitiatePaymentInput) =>
-      apiPost<ApiResponse<{ redirectUrl: string; payment: Payment }>>(
+      apiPost<ApiResponse<any>>(
         API_ROUTES.PAYMENTS.INITIATE,
         data
       ),

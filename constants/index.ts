@@ -57,14 +57,16 @@ export const API_ROUTES = {
     CANCEL: (id: string) => `/api/booking/cancel-booking/${id}`,
   },
   PAYMENTS: {
-    INITIATE: "/api/payments/initiate",
-    LIST: "/api/payments",
+    INITIATE: "/api/payment/checkout",
+    LIST: "/api/payment/payment-history",
     DETAIL: (id: string) => `/api/payments/${id}`,
   },
   REVIEWS: {
-    LIST: "/api/reviews",
-    CREATE: "/api/reviews",
-    BY_SERVICE: (serviceId: string) => `/api/reviews/service/${serviceId}`,
+    LIST: "/api/review/get-reviews",
+    CREATE: "/api/review",
+    UPDATE: (id: string) => `/api/review/${id}`,
+    DELETE: (id: string) => `/api/review/${id}`,
+    BY_SERVICE: (serviceId: string) => `/api/review/get-reviews?serviceId=${serviceId}`,
   },
   ADMIN: {
     CREATE_CATEGORY: "/api/category/create-category",
@@ -145,7 +147,7 @@ export const CUSTOMER_SIDEBAR_ITEMS = [
   { title: "Overview", href: "/dashboard", icon: "LayoutDashboard" },
   { title: "Services", href: "/dashboard/services", icon: "Wrench" },
   { title: "My Bookings", href: "/dashboard/bookings", icon: "Calendar" },
-  { title: "Payments", href: "/dashboard/payments", icon: "CreditCard" },
+  { title: "Payment History", href: "/dashboard/payments", icon: "CreditCard" },
   { title: "Reviews", href: "/dashboard/reviews", icon: "Star" },
   { title: "Notifications", href: "/dashboard/notifications", icon: "Bell" },
   { title: "Profile", href: "/dashboard/profile", icon: "User" },
@@ -185,6 +187,7 @@ export const BOOKING_STATUS_CONFIG: Record<
   REQUESTED: { label: "Requested", color: "text-amber-700 dark:text-amber-400", bgColor: "bg-amber-100 dark:bg-amber-900/30" },
   PENDING: { label: "Pending", color: "text-amber-700 dark:text-amber-400", bgColor: "bg-amber-100 dark:bg-amber-900/30" },
   ACCEPTED: { label: "Accepted", color: "text-blue-700 dark:text-blue-400", bgColor: "bg-blue-100 dark:bg-blue-900/30" },
+  PAID: { label: "Paid", color: "text-emerald-700 dark:text-emerald-400", bgColor: "bg-emerald-100 dark:bg-emerald-900/30" },
   DECLINED: { label: "Declined", color: "text-red-700 dark:text-red-400", bgColor: "bg-red-100 dark:bg-red-900/30" },
   IN_PROGRESS: { label: "In Progress", color: "text-purple-700 dark:text-purple-400", bgColor: "bg-purple-100 dark:bg-purple-900/30" },
   COMPLETED: { label: "Completed", color: "text-emerald-700 dark:text-emerald-400", bgColor: "bg-emerald-100 dark:bg-emerald-900/30" },
@@ -197,6 +200,7 @@ export const PAYMENT_STATUS_CONFIG: Record<
 > = {
   PENDING: { label: "Pending", color: "text-amber-700 dark:text-amber-400", bgColor: "bg-amber-100 dark:bg-amber-900/30" },
   PAID: { label: "Paid", color: "text-emerald-700 dark:text-emerald-400", bgColor: "bg-emerald-100 dark:bg-emerald-900/30" },
+  SUCCESS: { label: "Success", color: "text-emerald-700 dark:text-emerald-400", bgColor: "bg-emerald-100 dark:bg-emerald-900/30" },
   FAILED: { label: "Failed", color: "text-red-700 dark:text-red-400", bgColor: "bg-red-100 dark:bg-red-900/30" },
   REFUNDED: { label: "Refunded", color: "text-blue-700 dark:text-blue-400", bgColor: "bg-blue-100 dark:bg-blue-900/30" },
 };

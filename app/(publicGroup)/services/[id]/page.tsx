@@ -7,11 +7,16 @@ import { formatCurrency } from "@/utils/format";
 import { Star, Users, Clock, ArrowRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { getAllReviewsAction } from "../reviews/_actions/reviewAction";
+import { getInitials } from "@/utils/format";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export const metadata: Metadata = { title: "Service Details" };
 
 export default async function ServiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  
+  const reviews = await getAllReviewsAction(5, id);
   
   // Demo data - will be replaced with API call
   const service = {
@@ -65,15 +70,29 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
             <div>
               <h2 className="mb-4 text-xl font-semibold text-neutral-900 dark:text-white">Customer Reviews</h2>
               <div className="space-y-4">
-                {[{ name: "Karim", rating: 5, text: "Excellent service! The plumber was professional and fixed everything quickly." }, { name: "Fatima", rating: 4, text: "Good work overall. Arrived on time and completed the job efficiently." }].map((r) => (
-                  <div key={r.name} className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="font-medium text-neutral-900 dark:text-white">{r.name}</span>
-                      <StarRating rating={r.rating} size="sm" />
+                {reviews.length > 0 ? reviews.map((r, i) => {
+                  const customerName = r.customer?.name || r.customerName || "Customer";
+                  return (
+                    <div key={r.id || i} className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Avatar className="size-6">
+                          <AvatarImage src={r.customer?.avatar || r.avatar} alt={customerName} />
+                          <AvatarFallback className="text-[10px]">{getInitials(customerName)}</AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium text-sm text-neutral-900 dark:text-white">{customerName}</span>
+                        <StarRating rating={r.rating || 5} size="sm" />
+                        <span className="ml-auto text-xs text-neutral-500">
+                          {new Date(r.createdAt || r.date || Date.now()).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-neutral-600 dark:text-neutral-400">{r.comment}</p>
                     </div>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">{r.text}</p>
+                  );
+                }) : (
+                  <div className="text-center py-6 text-sm text-neutral-500">
+                    No reviews yet for this service.
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>

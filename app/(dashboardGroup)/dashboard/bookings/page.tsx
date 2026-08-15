@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Calendar, Search, X, Eye, XCircle, CreditCard, Loader2 } from "lucide-react";
+import { Calendar, Search, X, Eye, XCircle, CreditCard, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,8 +48,8 @@ export default function BookingsPage() {
 
     if (activeTab === "pending") return b.status === "PENDING" || b.status === "REQUESTED";
     if (activeTab === "payment-now") return b.status === "ACCEPTED" && currentPaymentStatus === "PENDING";
-    if (activeTab === "active") return (b.status === "ACCEPTED" && currentPaymentStatus === "PAID") || b.status === "IN_PROGRESS";
-    if (activeTab === "history") return ["COMPLETED", "CANCELLED", "DECLINED"].includes(b.status);
+    if (activeTab === "active") return b.status === "IN_PROGRESS";
+    if (activeTab === "history") return ["COMPLETED", "CANCELLED", "DECLINED"].includes(b.status) || (b.status === "ACCEPTED" && (currentPaymentStatus === "PAID" || currentPaymentStatus === "SUCCESS"));
     
     return true; // all
   });
@@ -74,9 +74,10 @@ export default function BookingsPage() {
     paymentMutation.mutate(
       { bookingId: paymentBookingId, method },
       {
-        onSuccess: (res) => {
-          if (res.data?.redirectUrl) {
-            window.location.href = res.data.redirectUrl;
+        onSuccess: (res: any) => {
+          const redirectUrl = res.data?.url || res.data?.redirectUrl || (typeof res.data === "string" ? res.data : null);
+          if (redirectUrl) {
+            window.location.href = redirectUrl;
           } else {
             toast.success("Payment initiated!");
             setPaymentBookingId(null);
@@ -90,16 +91,19 @@ export default function BookingsPage() {
   const renderCard = (b: Booking) => {
     // "REQUESTED" maps to pending visually in terms of actions
     const currentPaymentStatus = b.paymentStatus || "PENDING";
-    const canCancel = b.status === "REQUESTED" || b.status === "PENDING" || b.status === "ACCEPTED";
+    const canCancel = (b.status === "REQUESTED" || b.status === "PENDING" || b.status === "ACCEPTED") && currentPaymentStatus !== "PAID" && currentPaymentStatus !== "SUCCESS";
     const canPay = currentPaymentStatus === "PENDING" && b.status === "ACCEPTED";
     
-    // Graceful fallback for missing fields in DB
-    const displayDate = b.availability?.date || b.bookingDate || b.createdAt;
-    const displayTime = b.availability?.startTime || "TBD";
+    const matchedAvailability = b.technician?.availabilities?.find((a: any) => a.id === b.availabilityId);
+    const displayDate = matchedAvailability?.date || b.availability?.date || b.bookingDate || b.createdAt;
+    const displayTime = matchedAvailability?.startTime || matchedAvailability?.timeSlots?.[0]?.startTime || b.availability?.startTime || "TBD";
     const amount = Number(b.price) || 0;
 
+    const isPaid = currentPaymentStatus === "PAID" || currentPaymentStatus === "SUCCESS" || (b.status as string) === "PAID";
+    const borderClass = isPaid ? "border-emerald-400 dark:border-emerald-600/50 shadow-emerald-500/10 dark:shadow-emerald-900/20" : "border-white/40 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)]";
+
     return (
-      <div key={b.id} className="group relative flex flex-col overflow-hidden rounded-[1.5rem] border border-white/40 bg-white/60 p-1 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl transition-all hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)] hover:-translate-y-1 dark:border-white/10 dark:bg-neutral-900/50">
+      <div key={b.id} className={`group relative flex flex-col overflow-hidden rounded-[1.5rem] border bg-white/60 p-1 backdrop-blur-xl transition-all hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)] hover:-translate-y-1 dark:bg-neutral-900/50 ${borderClass}`}>
         {/* Subtle gradient glow behind the content */}
         <div className="absolute -left-10 -top-10 -z-10 h-32 w-32 rounded-full bg-blue-500/10 blur-3xl transition-opacity group-hover:bg-blue-500/20 dark:bg-blue-500/5" />
         
@@ -118,7 +122,7 @@ export default function BookingsPage() {
               <span className="font-medium">{formatDate(displayDate)}</span>
             </div>
             <div className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-              {displayTime}
+              {displayTime !== "TBD" ? formatDate(displayTime, "h:mm a") : displayTime}
             </div>
           </div>
           
@@ -127,12 +131,14 @@ export default function BookingsPage() {
               <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Amount</span>
               <p className="text-xl font-black text-neutral-900 dark:text-white">{formatCurrency(amount)}</p>
             </div>
-            <PaymentStatusBadge status={currentPaymentStatus} />
+            {b.status !== "PAID" && b.status !== "COMPLETED" && b.status !== "IN_PROGRESS" && (
+              <PaymentStatusBadge status={currentPaymentStatus} />
+            )}
           </div>
         </div>
 
         <div className="mt-1 flex gap-1 p-1">
-          <Button variant="secondary" asChild className="h-12 flex-1 rounded-xl bg-neutral-100 font-semibold text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700">
+          <Button variant="secondary" asChild className={`h-12 flex-1 rounded-xl bg-neutral-100 font-semibold text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 ${isPaid && b.status !== "COMPLETED" ? 'flex-[0.5]' : ''}`}>
             <Link href={`/dashboard/bookings/${b.id}`}>
               <Eye className="mr-2 size-4" /> Details
             </Link>
@@ -145,6 +151,10 @@ export default function BookingsPage() {
             <Button variant="outline" onClick={() => setCancelId(b.id)} className="h-12 flex-1 rounded-xl border-red-200 font-semibold text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/30 dark:text-red-400 dark:hover:bg-red-950/30">
               <XCircle className="mr-2 size-4" /> Cancel
             </Button>
+          ) : isPaid && b.status !== "COMPLETED" ? (
+             <div className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 font-semibold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-400">
+               <CheckCircle2 className="size-5" /> Payment Complete
+             </div>
           ) : null}
         </div>
       </div>

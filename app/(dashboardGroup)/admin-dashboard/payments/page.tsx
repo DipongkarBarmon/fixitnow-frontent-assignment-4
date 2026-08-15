@@ -46,7 +46,7 @@ export default function AdminPaymentsPage() {
   const meta = paymentsRes?.meta;
 
   const totalVolume = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-  const paidCount = payments.filter((p) => p.status === "PAID").length;
+  const paidCount = payments.filter((p) => p.status === "PAID" || p.status === "SUCCESS").length;
 
   const filteredPayments = payments.filter((p) => {
     if (!search) return true;
@@ -165,6 +165,7 @@ export default function AdminPaymentsPage() {
               <SelectContent>
                 <SelectItem value="ALL">All Payments</SelectItem>
                 <SelectItem value="PAID">Paid / Completed</SelectItem>
+                <SelectItem value="SUCCESS">Success</SelectItem>
                 <SelectItem value="PENDING">Pending</SelectItem>
                 <SelectItem value="FAILED">Failed</SelectItem>
                 <SelectItem value="REFUNDED">Refunded</SelectItem>

@@ -171,6 +171,7 @@ export interface Availability {
   date: string;
   dayOfWeek: number;
   timeSlots: TimeSlot[];
+  startTime?: string;
   isBlocked: boolean;
   createdAt: string;
   updatedAt: string;
@@ -192,6 +193,7 @@ export type BookingStatus =
   | "PENDING"
   | "ACCEPTED"
   | "DECLINED"
+  | "PAID"
   | "IN_PROGRESS"
   | "COMPLETED"
   | "CANCELLED";
@@ -208,6 +210,10 @@ export interface Booking {
   availabilityId?: string;
   availability?: any; // To hold availability relation if backend populates it
   price: number; // In Prisma it's Decimal
+  totalPrice?: number;
+  timeSlot?: string;
+  startTime?: string;
+  endTime?: string;
   status: BookingStatus;
   notes?: string;
   paymentStatus: PaymentStatus;
@@ -238,7 +244,7 @@ export interface BookingFilters {
 // Payment Types
 // ==========================================
 
-export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "REFUNDED";
+export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "REFUNDED" | "SUCCESS";
 export type PaymentMethod = "STRIPE" | "SSLCOMMERZ";
 
 export interface Payment {
@@ -296,10 +302,17 @@ export interface CreateReviewInput {
   rating: number;
   comment: string;
 }
+  
+export interface UpdateReviewInput {
+  rating?: number;
+  comment?: string;
+}
 
 export interface ReviewFilters {
   serviceId?: string;
   technicianId?: string;
+  customerId?: string;
+  bookingId?: string;
   rating?: number;
   page?: number;
   limit?: number;

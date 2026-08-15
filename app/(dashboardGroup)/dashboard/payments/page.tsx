@@ -31,15 +31,16 @@ export default function PaymentsPage() {
 
   const payments = data?.data ?? [];
   const totalPages = data?.meta?.totalPages ?? 1;
-  const totalPaid = payments.filter((p) => p.status === "PAID").reduce((s, p) => s + p.amount, 0);
+  const totalPaid = payments.filter((p) => p.status === "PAID" || p.status === "SUCCESS").reduce((s, p) => s + p.amount, 0);
 
   const handlePay = (method: PaymentMethod) => {
     if (!payBookingId) return;
     paymentMutation.mutate(
       { bookingId: payBookingId, method },
       {
-        onSuccess: (res) => {
-          if (res.data?.redirectUrl) { window.location.href = res.data.redirectUrl; }
+        onSuccess: (res: any) => {
+          const redirectUrl = res.data?.url || res.data?.redirectUrl || (typeof res.data === "string" ? res.data : null);
+          if (redirectUrl) { window.location.href = redirectUrl; }
           else { toast.success("Payment initiated!"); setPayBookingId(null); }
         },
         onError: () => toast.error("Payment initiation failed."),
@@ -59,7 +60,7 @@ export default function PaymentsPage() {
         <div className="grid gap-4 sm:grid-cols-3">
           {[
             { label: "Total Paid", value: formatCurrency(totalPaid), color: "text-emerald-600" },
-            { label: "Total Payments", value: String(data?.meta?.total ?? 0), color: "text-blue-600" },
+            { label: "Total Payments", value: String(data?.meta?.total || payments.length || 0), color: "text-blue-600" },
             { label: "Pending Payments", value: String(payments.filter((p) => p.status === "PENDING").length), color: "text-amber-600" },
           ].map(({ label, value, color }) => (
             <div key={label} className="rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
@@ -75,7 +76,7 @@ export default function PaymentsPage() {
         <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as PaymentStatus | "ALL"); setPage(1); }}>
           <SelectTrigger className="w-[180px]"><SelectValue placeholder="Filter by status" /></SelectTrigger>
           <SelectContent>
-            {["ALL", "PAID", "PENDING", "FAILED", "REFUNDED"].map((s) => (
+            {["ALL", "PAID", "SUCCESS", "PENDING", "FAILED", "REFUNDED"].map((s) => (
               <SelectItem key={s} value={s}>{s === "ALL" ? "All Statuses" : s}</SelectItem>
             ))}
           </SelectContent>
