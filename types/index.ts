@@ -218,7 +218,7 @@ export interface Booking {
   notes?: string;
   paymentStatus: PaymentStatus;
   payment?: Payment;
-  review?: Review;
+  reviews?: Review[];
   createdAt: string;
   updatedAt: string;
 }

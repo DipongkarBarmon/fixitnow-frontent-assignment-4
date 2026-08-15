@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Calendar, Search, X, Eye, XCircle, CreditCard, Loader2, CheckCircle2 } from "lucide-react";
+import { Calendar, Search, X, Eye, XCircle, CreditCard, Loader2, CheckCircle2, Star } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,7 +143,13 @@ export default function BookingsPage() {
               <Eye className="mr-2 size-4" /> Details
             </Link>
           </Button>
-          {canPay ? (
+          {b.status === "COMPLETED" && (!b.reviews || b.reviews.length === 0) ? (
+            <Button variant="default" asChild className="h-12 flex-1 rounded-xl bg-amber-500 font-semibold text-white shadow-sm hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700">
+              <Link href={`/dashboard/bookings/${b.id}`}>
+                <Star className="mr-2 size-4" /> Leave Review
+              </Link>
+            </Button>
+          ) : canPay ? (
             <Button variant="default" onClick={() => setPaymentBookingId(b.id)} className="h-12 flex-1 rounded-xl bg-blue-600 font-semibold text-white shadow-sm hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
               <CreditCard className="mr-2 size-4" /> Pay Now
             </Button>

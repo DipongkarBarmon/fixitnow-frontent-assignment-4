@@ -105,7 +105,8 @@ export default function BookingDetailPage() {
   const techAvatar = booking.technician?.user?.avatar ?? getAvatarUrl(techName);
   const canCancel = booking.status === "PENDING" || booking.status === "ACCEPTED";
   const canPay = booking.paymentStatus === "PENDING" && booking.status !== "CANCELLED";
-  const canReview = booking.status === "COMPLETED" && !booking.review;
+  const canReview = booking.status === "COMPLETED" && (!booking.reviews || booking.reviews.length === 0);
+  const existingReview = booking.reviews?.[0];
 
   return (
     <div className="space-y-6">
@@ -173,17 +174,17 @@ export default function BookingDetailPage() {
           </Card>
 
           {/* Review (if submitted) */}
-          {booking.review && (
+          {existingReview && (
             <Card>
               <CardHeader><CardTitle className="text-base">Your Review</CardTitle></CardHeader>
               <CardContent>
                 <div className="flex items-center gap-1 mb-2">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className={`size-4 ${i < booking.review!.rating ? "fill-amber-400 text-amber-400" : "text-neutral-300"}`} />
+                    <Star key={i} className={`size-4 ${i < existingReview.rating ? "fill-amber-400 text-amber-400" : "text-neutral-300"}`} />
                   ))}
                 </div>
-                <p className="text-neutral-600 dark:text-neutral-400">{booking.review.comment}</p>
-                <p className="mt-1 text-xs text-neutral-400">{formatRelativeTime(booking.review.createdAt)}</p>
+                <p className="text-neutral-600 dark:text-neutral-400">{existingReview.comment}</p>
+                <p className="mt-1 text-xs text-neutral-400">{formatRelativeTime(existingReview.createdAt)}</p>
               </CardContent>
             </Card>
           )}
