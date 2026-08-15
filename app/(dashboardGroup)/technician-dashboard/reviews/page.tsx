@@ -32,14 +32,12 @@ export default function TechnicianReviewsPage() {
   const avgRating = Number(profile?.averageRating || 4.8);
   const totalReviews = Number(profile?.totalReviews ?? (reviews.length > 0 ? reviews.length : 12));
 
-  // Rating breakdown stats
-  const ratingDistribution = [
-    { stars: 5, count: 9, percentage: 75 },
-    { stars: 4, count: 2, percentage: 17 },
-    { stars: 3, count: 1, percentage: 8 },
-    { stars: 2, count: 0, percentage: 0 },
-    { stars: 1, count: 0, percentage: 0 },
-  ];
+  const actualTotalReviews = reviews.length;
+  const ratingDistribution = [5, 4, 3, 2, 1].map((stars) => {
+    const count = reviews.filter((r) => Math.round(Number(r.rating)) === stars).length;
+    const percentage = actualTotalReviews > 0 ? Math.round((count / actualTotalReviews) * 100) : 0;
+    return { stars, count, percentage };
+  });
 
   return (
     <div className="space-y-8">
@@ -148,7 +146,7 @@ export default function TechnicianReviewsPage() {
                         {r.customer?.name || "Verified Customer"}
                       </h4>
                       <p className="text-xs text-neutral-500">
-                        Service: {typeof r.service === "object" ? r.service?.name : (r.service || "Home Service")} • {formatDate(r.createdAt || new Date().toISOString())}
+                        Service: {(r.service && typeof r.service === "object" ? (r.service.title || r.service.name) : r.service) || "Home Service"} • {formatDate(r.createdAt || new Date().toISOString())}
                       </p>
                     </div>
                   </div>

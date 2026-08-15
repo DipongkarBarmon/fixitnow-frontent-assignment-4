@@ -113,7 +113,7 @@ export default function PaymentsPage() {
                       {p.method ? METHOD_ICONS[p.method] : "💰"}
                     </div>
                     <div>
-                      <p className="font-medium text-neutral-900 dark:text-white">{p.booking?.service?.name ?? "Service Payment"}</p>
+                      <p className="font-medium text-neutral-900 dark:text-white">{p.booking?.service?.title || p.booking?.service?.name || "Service Payment"}</p>
                       <p className="text-sm text-neutral-500">
                         {p.method ?? "—"} • {formatDate(p.createdAt)}
                         {p.transactionId && ` • ${p.transactionId}`}

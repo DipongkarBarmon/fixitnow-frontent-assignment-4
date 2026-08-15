@@ -209,7 +209,7 @@ export default function TechnicianBookingsPage() {
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-base font-bold text-neutral-900 dark:text-white">
-                        {b.service?.name || "Home Service"}
+                        {b.service?.title || b.service?.name || "Home Service"}
                       </h3>
                       <BookingStatusBadge status={b.status} />
                       {b.status !== "PAID" && b.status !== "COMPLETED" && b.status !== "IN_PROGRESS" && (
@@ -255,7 +255,7 @@ export default function TechnicianBookingsPage() {
                     <div className="text-left lg:text-right">
                       <span className="text-xs text-neutral-400">Total Price</span>
                       <p className="text-lg font-bold text-neutral-900 dark:text-white">
-                        {formatCurrency(b.price || b.totalPrice || 0)}
+                        {formatCurrency(Number(b.price || b.totalPrice || 0))}
                       </p>
                     </div>
 
@@ -369,7 +369,7 @@ export default function TechnicianBookingsPage() {
               <div className="flex items-center justify-between border-b border-neutral-100 pb-3 dark:border-neutral-800">
                 <div>
                   <h4 className="font-bold text-neutral-900 dark:text-white">
-                    {selectedBooking.service?.name}
+                    {selectedBooking.service?.title || selectedBooking.service?.name}
                   </h4>
                   <p className="text-xs text-neutral-500">
                     Category: {selectedBooking.service?.category?.name || "General"}
@@ -430,7 +430,7 @@ export default function TechnicianBookingsPage() {
                 <div className="rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
                   <p className="text-neutral-500">Payment Status & Amount</p>
                   <p className="mt-1 font-semibold text-neutral-900 dark:text-white">
-                    {formatCurrency(selectedBooking.price || selectedBooking.totalPrice || 0)}
+                    {formatCurrency(Number(selectedBooking.price || selectedBooking.totalPrice || 0))}
                   </p>
                   <div className="mt-1">
                     {selectedBooking.status !== "PAID" && selectedBooking.status !== "COMPLETED" && selectedBooking.status !== "IN_PROGRESS" && (

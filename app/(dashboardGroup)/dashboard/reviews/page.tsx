@@ -112,7 +112,7 @@ export default function CustomerReviewsPage() {
 
       <div className="grid gap-6 xl:grid-cols-2">
         {reviews.map((review: any) => {
-          const serviceName = typeof review.service === "object" ? (review.service?.name || review.service?.title) : "Home Service";
+          const serviceName = (review.service && typeof review.service === "object" ? (review.service.title || review.service.name) : review.service) || "Home Service";
           const techName = review.technician?.user?.name ?? "Technician";
           const techAvatar = review.technician?.user?.avatar ?? getAvatarUrl(techName);
           

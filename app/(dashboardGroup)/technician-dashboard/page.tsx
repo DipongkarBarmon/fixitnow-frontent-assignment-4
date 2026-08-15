@@ -51,7 +51,7 @@ export default function TechnicianDashboard() {
     (b) => b.status === "ACCEPTED" || b.status === "PENDING" || b.status === "IN_PROGRESS"
   );
 
-  const totalEarnings = completedBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+  const totalEarnings = completedBookings.reduce((sum, b) => sum + (Number(b.totalPrice || b.price) || 0), 0);
   const monthlyEarnings = totalEarnings > 0 ? totalEarnings : (profile?.hourlyRate ? profile.hourlyRate * 20 : 15000);
   const avgRating = Number(profile?.averageRating || 4.8);
   const totalCompleted = profile?.completedJobs ?? completedBookings.length;
@@ -255,7 +255,7 @@ export default function TechnicianDashboard() {
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-semibold text-neutral-900 dark:text-white">
-                        {job.service?.name || "Home Service"}
+                        {job.service?.title || job.service?.name || "Home Service"}
                       </p>
                       <BookingStatusBadge status={job.status} />
                     </div>
@@ -274,7 +274,7 @@ export default function TechnicianDashboard() {
 
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="text-base font-bold text-neutral-900 dark:text-white">
-                      {formatCurrency(job.totalPrice || 0)}
+                      {formatCurrency(Number(job.totalPrice || job.price || 0))}
                     </span>
 
                     {/* Quick action buttons according to status */}

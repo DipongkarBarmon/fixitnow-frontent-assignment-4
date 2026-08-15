@@ -26,9 +26,9 @@ export default function BookingClient() {
   const [notes, setNotes] = useState("");
 
   const { data: serviceRes, isLoading: serviceLoading, error: serviceError } = useServiceDetail(serviceId ?? "");
-  const service = serviceRes?.data ?? ((serviceRes as any)?.id ? serviceRes : null);
+  const service = (serviceRes?.data ?? ((serviceRes as any)?.id ? serviceRes : null)) as any;
 
-  const technicianId = service?.technicianId || (service as any)?.technician?.id;
+  const technicianId = service?.technicianId || service?.technician?.id;
   
   const { data: availRes, isLoading: availLoading } = useAvailability(technicianId ?? "");
   const availabilityData = availRes?.data ?? (Array.isArray(availRes) ? availRes : []);

@@ -7,7 +7,7 @@ import { formatCurrency } from "@/utils/format";
 import { Star, Users, Clock, ArrowRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { getAllReviewsAction } from "../reviews/_actions/reviewAction";
+import { getAllReviewsAction } from "../../reviews/_actions/reviewAction";
 import { getInitials } from "@/utils/format";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -70,7 +70,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
             <div>
               <h2 className="mb-4 text-xl font-semibold text-neutral-900 dark:text-white">Customer Reviews</h2>
               <div className="space-y-4">
-                {reviews.length > 0 ? reviews.map((r, i) => {
+                {reviews.length > 0 ? reviews.map((r: any, i: number) => {
                   const customerName = r.customer?.name || r.customerName || "Customer";
                   return (
                     <div key={r.id || i} className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">

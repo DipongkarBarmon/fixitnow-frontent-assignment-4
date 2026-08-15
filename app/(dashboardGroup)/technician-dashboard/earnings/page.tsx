@@ -53,7 +53,7 @@ export default function TechnicianEarningsPage() {
   const bookings: Booking[] = Array.isArray(rawData) ? rawData : (Array.isArray((rawData as any)?.data) ? (rawData as any).data : []);
   const completedBookings = bookings.filter((b) => b.status === "COMPLETED");
 
-  const grossEarnings = completedBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+  const grossEarnings = completedBookings.reduce((sum, b) => sum + (Number(b.totalPrice || b.price) || 0), 0);
   const platformFee = Math.round(grossEarnings * 0.1); // 10% platform fee
   const netEarnings = grossEarnings - platformFee;
   const availableBalance = Math.max(netEarnings, 12500);
@@ -177,7 +177,7 @@ export default function TechnicianEarningsPage() {
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                   {completedBookings.map((job) => {
-                    const gross = job.totalPrice || 0;
+                    const gross = Number(job.totalPrice || job.price || 0);
                     const fee = Math.round(gross * 0.1);
                     const net = gross - fee;
 
@@ -188,7 +188,7 @@ export default function TechnicianEarningsPage() {
                         </td>
                         <td className="py-3">
                           <p className="font-semibold text-neutral-900 dark:text-white">
-                            {job.service?.name || "Home Service"}
+                            {job.service?.title || job.service?.name || "Home Service"}
                           </p>
                           <p className="text-xs text-neutral-500">
                             {job.customer?.name || "Customer"}

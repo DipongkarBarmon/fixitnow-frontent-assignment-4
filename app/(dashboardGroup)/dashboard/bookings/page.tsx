@@ -114,7 +114,7 @@ export default function BookingsPage() {
         <div className="flex-1 rounded-2xl bg-white/40 p-5 dark:bg-neutral-950/40">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h3 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white line-clamp-1">{b.service?.name ?? "Custom Service"}</h3>
+              <h3 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white line-clamp-1">{b.service?.title || b.service?.name || "Custom Service"}</h3>
               <p className="text-sm font-medium text-neutral-500 line-clamp-1">by {b.technician?.user?.name ?? "Technician"}</p>
             </div>
             <BookingStatusBadge status={b.status} />

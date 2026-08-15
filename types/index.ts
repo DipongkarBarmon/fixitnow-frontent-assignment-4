@@ -64,6 +64,7 @@ export interface Category {
 export interface Service {
   id: string;
   name: string;
+  title?: string;
   slug?: string;
   description: string;
   image?: string;
@@ -80,6 +81,8 @@ export interface Service {
   updatedAt: string;
   certificates?: string[];
   experienceYears?: number;
+  technicianId?: string;
+  technician?: TechnicianProfile;
 }
 
 export interface ServiceFilters {
@@ -100,6 +103,7 @@ export interface ServiceFilters {
 export interface TechnicianProfile {
   id: string;
   userId: string;
+  name?: string;
   user?: User;
   bio?: string;
   address?: string;
