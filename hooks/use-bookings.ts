@@ -25,7 +25,15 @@ export function useBookings(filters: BookingFilters = {}) {
         ...filters,
         page: filters.page,
         limit: filters.limit,
-      }).catch(() => 
+      })
+      .catch(() => 
+        apiGet<PaginatedResponse<Booking>>(API_ROUTES.ADMIN.GET_ALL_BOOKINGS, {
+          ...filters,
+          page: filters.page,
+          limit: filters.limit,
+        })
+      )
+      .catch(() => 
         apiGet<PaginatedResponse<Booking>>(API_ROUTES.BOOKINGS.LIST, {
           ...filters,
           page: filters.page,

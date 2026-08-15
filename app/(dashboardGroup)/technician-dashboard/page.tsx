@@ -34,7 +34,7 @@ import type { Booking } from "@/types";
 export default function TechnicianDashboard() {
   const { user } = useAuth();
   const { data: profileRes, isLoading: profileLoading } = useMyTechnicianProfile();
-  const { data: bookingsRes, isLoading: bookingsLoading } = useBookings({ limit: 10 });
+  const { data: bookingsRes, isLoading: bookingsLoading } = useBookings({ limit: 1000 });
   const updateStatusMutation = useUpdateBookingStatus();
 
   const profile = profileRes?.data;
@@ -52,8 +52,19 @@ export default function TechnicianDashboard() {
   );
 
   const totalEarnings = completedBookings.reduce((sum, b) => sum + (Number(b.totalPrice || b.price) || 0), 0);
-  const monthlyEarnings = totalEarnings > 0 ? totalEarnings : (profile?.hourlyRate ? profile.hourlyRate * 20 : 15000);
-  const avgRating = Number(profile?.averageRating || 4.8);
+  
+  // Calculate this month's earnings
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  const monthlyEarnings = completedBookings.reduce((sum, b) => {
+    const d = new Date(b.createdAt);
+    if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+      return sum + (Number(b.totalPrice || b.price) || 0);
+    }
+    return sum;
+  }, 0);
+
+  const avgRating = Number(profile?.averageRating || 0);
   const totalCompleted = profile?.completedJobs ?? completedBookings.length;
 
   const handleStatusChange = async (bookingId: string, status: "ACCEPTED" | "DECLINED" | "IN_PROGRESS" | "COMPLETED") => {
@@ -341,14 +352,14 @@ export default function TechnicianDashboard() {
         <StatCard
           icon={CreditCard}
           label="Total Lifetime Earnings"
-          value={formatCurrency(profile?.hourlyRate ? profile.hourlyRate * totalCompleted : 120000)}
+          value={formatCurrency(totalEarnings)}
           iconColor="text-blue-600"
           iconBg="bg-blue-100 dark:bg-blue-900/30"
         />
         <StatCard
           icon={User}
           label="Experience Level"
-          value={`${profile?.experience || 3}+ Years`}
+          value={`${profile?.experience || 0} Years`}
           iconColor="text-indigo-600"
           iconBg="bg-indigo-100 dark:bg-indigo-900/30"
         />

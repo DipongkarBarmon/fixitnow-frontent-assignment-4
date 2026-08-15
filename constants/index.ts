@@ -77,6 +77,7 @@ export const API_ROUTES = {
     UPDATE_USER_STATUS: "/api/admin/update-user-status",
     DELETE_USER: (userId: string) => `/api/admin/delete-user?userId=${userId}`,
     STATS: "/api/admin/stats",
+    GET_ALL_BOOKINGS: "/api/admin/get-all-bookings",
   },
 } as const;
 

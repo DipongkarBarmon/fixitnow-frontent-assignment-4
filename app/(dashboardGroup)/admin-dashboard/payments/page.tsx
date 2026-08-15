@@ -24,7 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DataTable, type ColumnDef } from "@/components/shared/data-table";
 import { PaymentStatusBadge } from "@/components/shared/payment-status-badge";
 import { StatCard } from "@/components/cards/stat-card";
 import { usePayments } from "@/hooks";
@@ -45,8 +44,9 @@ export default function AdminPaymentsPage() {
   const payments: Payment[] = paymentsRes?.data ?? [];
   const meta = paymentsRes?.meta;
 
-  const totalVolume = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-  const paidCount = payments.filter((p) => p.status === "PAID" || p.status === "SUCCESS").length;
+  const settledPayments = payments.filter((p) => p.status === "PAID" || p.status === "SUCCESS");
+  const totalVolume = settledPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const paidCount = settledPayments.length;
 
   const filteredPayments = payments.filter((p) => {
     if (!search) return true;
@@ -57,56 +57,6 @@ export default function AdminPaymentsPage() {
       p.method?.toLowerCase().includes(s)
     );
   });
-
-  const columns: ColumnDef<Payment>[] = [
-    {
-      key: "transactionId",
-      header: "Transaction ID",
-      cell: (p) => (
-        <div>
-          <span className="font-mono text-xs font-bold text-neutral-900 dark:text-white">
-            {p.transactionId || `TXN_${p.id.slice(-8)}`}
-          </span>
-          <p className="text-xs text-neutral-400">Order #{p.bookingId?.slice(-6) || "—"}</p>
-        </div>
-      ),
-    },
-    {
-      key: "amount",
-      header: "Amount",
-      sortable: true,
-      cell: (p) => (
-        <span className="font-bold text-neutral-900 dark:text-white text-sm">
-          {formatCurrency(p.amount || 0)}
-        </span>
-      ),
-    },
-    {
-      key: "method",
-      header: "Method",
-      cell: (p) => {
-        const method = p.method || "SSLCOMMERZ";
-        return (
-          <Badge variant="secondary" className="font-medium text-xs">
-            {method}
-          </Badge>
-        );
-      },
-    },
-    {
-      key: "status",
-      header: "Payment Status",
-      cell: (p) => <PaymentStatusBadge status={p.status} />,
-    },
-    {
-      key: "createdAt",
-      header: "Date & Time",
-      hideOnMobile: true,
-      cell: (p) => (
-        <span className="text-xs text-neutral-500">{formatDate(p.createdAt)}</span>
-      ),
-    },
-  ];
 
   return (
     <div className="space-y-6">
@@ -125,21 +75,21 @@ export default function AdminPaymentsPage() {
         <StatCard
           icon={TrendingUp}
           label="Total Settled Volume"
-          value={formatCurrency(totalVolume > 0 ? totalVolume : 485000)}
+          value={formatCurrency(totalVolume)}
           iconColor="text-emerald-600"
           iconBg="bg-emerald-100 dark:bg-emerald-900/30"
         />
         <StatCard
           icon={CheckCircle2}
           label="Successful Payments"
-          value={paidCount > 0 ? paidCount.toString() : "142"}
+          value={paidCount.toString()}
           iconColor="text-blue-600"
           iconBg="bg-blue-100 dark:bg-blue-900/30"
         />
         <StatCard
           icon={Wallet}
           label="Platform Revenue (10%)"
-          value={formatCurrency(Math.round((totalVolume > 0 ? totalVolume : 485000) * 0.1))}
+          value={formatCurrency(Math.round(totalVolume * 0.1))}
           iconColor="text-purple-600"
           iconBg="bg-purple-100 dark:bg-purple-900/30"
         />
@@ -175,19 +125,89 @@ export default function AdminPaymentsPage() {
         </CardContent>
       </Card>
 
-      {/* DataTable */}
-      <DataTable
-        columns={columns}
-        data={filteredPayments}
-        rowKey="id"
-        isLoading={isLoading}
-        searchable
-        searchPlaceholder="Search by transaction ID or method..."
-        emptyMessage="No payment records found"
-        emptyDescription="All completed checkout transactions will be logged here."
-        meta={meta}
-        onPageChange={setPage}
-      />
+      {/* Payment List */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            Transaction Logs
+            {meta && <span className="text-sm font-normal text-neutral-500">{meta.total} total</span>}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-6">
+            <input
+              type="text"
+              placeholder="Search by transaction ID or method..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-neutral-800 dark:bg-neutral-900"
+            />
+          </div>
+
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+                  <div className="space-y-1.5">
+                    <div className="h-4 w-36 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
+                    <div className="h-3 w-48 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="h-6 w-24 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
+                    <div className="h-5 w-16 animate-pulse rounded-full bg-neutral-200 dark:bg-neutral-800" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredPayments.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <CreditCard className="mb-4 size-12 text-neutral-300 dark:text-neutral-700" />
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">No payment records found</h3>
+              <p className="mt-2 text-sm text-neutral-500">All completed checkout transactions will be logged here.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredPayments.map((p) => {
+                const icon = p.method === "STRIPE" ? "💳" : p.method === "SSLCOMMERZ" ? "🏦" : "💰";
+                return (
+                  <div key={p.id} className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800 sm:flex-row sm:items-center sm:justify-between transition-colors hover:border-neutral-300 dark:hover:border-neutral-700">
+                    <div className="flex items-start gap-3">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-xl dark:bg-neutral-800">
+                        {icon}
+                      </div>
+                      <div>
+                        <p className="font-medium text-neutral-900 dark:text-white">
+                          {p.transactionId || `TXN_${p.id.slice(-8)}`}
+                        </p>
+                        <p className="text-sm text-neutral-500">
+                          {p.method ?? "—"} • {formatDate(p.createdAt)}
+                          {p.bookingId && ` • Order #${p.bookingId.slice(-6)}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 sm:shrink-0">
+                      <span className="text-lg font-bold text-neutral-900 dark:text-white">
+                        {formatCurrency(p.amount || 0)}
+                      </span>
+                      <PaymentStatusBadge status={p.status} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {!isLoading && (meta?.totalPages || 1) > 1 && (
+            <div className="mt-6 flex items-center justify-between">
+              <p className="text-sm text-neutral-500">Page {page} of {meta?.totalPages || 1}</p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(meta?.totalPages || 1, p + 1))} disabled={page >= (meta?.totalPages || 1)}>Next</Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

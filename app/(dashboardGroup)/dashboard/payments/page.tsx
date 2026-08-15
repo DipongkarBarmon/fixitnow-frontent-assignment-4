@@ -31,7 +31,7 @@ export default function PaymentsPage() {
 
   const payments = data?.data ?? [];
   const totalPages = data?.meta?.totalPages ?? 1;
-  const totalPaid = payments.filter((p) => p.status === "PAID" || p.status === "SUCCESS").reduce((s, p) => s + p.amount, 0);
+  const totalPaid = payments.filter((p) => p.status === "PAID" || p.status === "SUCCESS").reduce((s, p) => s + Number(p.amount || 0), 0);
 
   const handlePay = (method: PaymentMethod) => {
     if (!payBookingId) return;
